@@ -1,2 +1,2 @@
 # fotogest-pro
-Sistema de gestión para fotógrafos de eventos.
+Sistema de gestión para fotógrafos de eventos
