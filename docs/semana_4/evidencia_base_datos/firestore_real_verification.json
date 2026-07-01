@@ -2,6 +2,20 @@
   "projectId": "app-fotografia-881ef",
   "database": "(default)",
   "consoleUrl": "https://console.firebase.google.com/project/app-fotografia-881ef/firestore/databases/-default-/data",
+  "visibleCollections": [
+    "clientes",
+    "eventos",
+    "pagos",
+    "paquetes",
+    "usuarios"
+  ],
+  "officialCollections": [
+    "usuarios",
+    "clientes",
+    "paquetes",
+    "eventos",
+    "pagos"
+  ],
   "summary": {
     "usuarios": 3,
     "clientes": 3,
@@ -11,188 +25,189 @@
   },
   "samples": {
     "usuarios": [
-      [
-        "usr_001",
-        {
+      {
+        "documentId": "usr_001",
+        "fields": {
           "usuarioId": "usr_001",
           "email": "edwin.tavarez@example.com",
-          "rol": "fotografo",
+          "activo": true,
           "nombre": "Edwin Tavarez",
           "createdAt": "2026-07-01T09:00:00Z",
+          "rol": "fotografo"
+        }
+      },
+      {
+        "documentId": "usr_002",
+        "fields": {
+          "nombre": "Asistente Demo",
+          "rol": "asistente",
+          "createdAt": "2026-07-01T09:10:00Z",
+          "usuarioId": "usr_002",
+          "email": "asistente@example.com",
           "activo": true
         }
-      ],
-      [
-        "usr_002",
-        {
-          "nombre": "Asistente Demo",
-          "createdAt": "2026-07-01T09:10:00Z",
-          "activo": true,
-          "rol": "asistente",
-          "usuarioId": "usr_002",
-          "email": "asistente@example.com"
-        }
-      ],
-      [
-        "usr_003",
-        {
-          "activo": true,
+      },
+      {
+        "documentId": "usr_003",
+        "fields": {
           "createdAt": "2026-07-01T09:20:00Z",
-          "nombre": "Admin FotoGest",
           "rol": "administrador",
-          "usuarioId": "usr_003",
-          "email": "admin@example.com"
+          "nombre": "Admin FotoGest",
+          "activo": true,
+          "email": "admin@example.com",
+          "usuarioId": "usr_003"
         }
-      ]
+      }
     ],
     "clientes": [
-      [
-        "cli_001",
-        {
+      {
+        "documentId": "cli_001",
+        "fields": {
+          "createdAt": "2026-07-01T10:00:00Z",
+          "notas": "Prefiere contacto por WhatsApp",
+          "clienteId": "cli_001",
           "usuarioId": "usr_001",
           "nombre": "Maria Fernandez",
-          "clienteId": "cli_001",
-          "createdAt": "2026-07-01T10:00:00Z",
-          "telefono": "809-555-1101",
-          "notas": "Prefiere contacto por WhatsApp"
+          "telefono": "809-555-1101"
         }
-      ],
-      [
-        "cli_002",
-        {
-          "clienteId": "cli_002",
-          "usuarioId": "usr_001",
+      },
+      {
+        "documentId": "cli_002",
+        "fields": {
           "nombre": "Jose Ramirez",
           "telefono": "809-555-2202",
+          "usuarioId": "usr_001",
+          "clienteId": "cli_002",
           "notas": "Solicita album impreso",
           "createdAt": "2026-07-01T10:05:00Z"
         }
-      ],
-      [
-        "cli_003",
-        {
-          "clienteId": "cli_003",
-          "nombre": "Laura Gomez",
-          "usuarioId": "usr_001",
-          "telefono": "809-555-3303",
+      },
+      {
+        "documentId": "cli_003",
+        "fields": {
           "notas": "Evento en iglesia y recepcion",
-          "createdAt": "2026-07-01T10:10:00Z"
+          "clienteId": "cli_003",
+          "createdAt": "2026-07-01T10:10:00Z",
+          "usuarioId": "usr_001",
+          "nombre": "Laura Gomez",
+          "telefono": "809-555-3303"
         }
-      ]
+      }
     ],
     "paquetes": [
-      [
-        "paq_001",
-        {
+      {
+        "documentId": "paq_001",
+        "fields": {
+          "activo": true,
           "nombre": "Basico Evento",
-          "activo": true,
+          "paqueteId": "paq_001",
           "createdAt": "2026-07-01T10:20:00Z",
-          "precio": 3500,
           "descripcion": "20 fotos editadas y entrega digital",
-          "paqueteId": "paq_001"
+          "precio": 3500
         }
-      ],
-      [
-        "paq_002",
-        {
-          "paqueteId": "paq_002",
+      },
+      {
+        "documentId": "paq_002",
+        "fields": {
           "activo": true,
-          "descripcion": "40 fotos editadas, album digital y 5 impresas",
+          "paqueteId": "paq_002",
+          "nombre": "Premium Familiar",
           "createdAt": "2026-07-01T10:25:00Z",
-          "precio": 6500,
-          "nombre": "Premium Familiar"
+          "descripcion": "40 fotos editadas, album digital y 5 impresas",
+          "precio": 6500
         }
-      ],
-      [
-        "paq_003",
-        {
-          "nombre": "Cobertura Completa",
-          "paqueteId": "paq_003",
-          "descripcion": "80 fotos editadas, album impreso y entrega express",
-          "precio": 12000,
+      },
+      {
+        "documentId": "paq_003",
+        "fields": {
           "createdAt": "2026-07-01T10:30:00Z",
-          "activo": true
+          "paqueteId": "paq_003",
+          "nombre": "Cobertura Completa",
+          "activo": true,
+          "precio": 12000,
+          "descripcion": "80 fotos editadas, album impreso y entrega express"
         }
-      ]
+      }
     ],
     "eventos": [
-      [
-        "evt_001",
-        {
-          "paqueteId": "paq_002",
-          "clienteId": "cli_001",
-          "createdAt": "2026-07-01T11:00:00Z",
+      {
+        "documentId": "evt_001",
+        "fields": {
           "ubicacion": "Parroquia San Judas",
+          "usuarioId": "usr_001",
+          "clienteId": "cli_001",
+          "paqueteId": "paq_002",
           "fechaHora": "2026-07-05T15:00:00Z",
-          "estado": "programado",
-          "usuarioId": "usr_001",
           "tipo": "bautizo",
-          "eventoId": "evt_001"
+          "createdAt": "2026-07-01T11:00:00Z",
+          "eventoId": "evt_001",
+          "estado": "programado"
         }
-      ],
-      [
-        "evt_002",
-        {
+      },
+      {
+        "documentId": "evt_002",
+        "fields": {
           "createdAt": "2026-07-01T11:10:00Z",
-          "clienteId": "cli_002",
           "tipo": "cumpleanos",
-          "usuarioId": "usr_001",
           "eventoId": "evt_002",
           "estado": "en_proceso",
-          "fechaHora": "2026-07-06T18:00:00Z",
           "ubicacion": "Salon Vista Alegre",
-          "paqueteId": "paq_001"
-        }
-      ],
-      [
-        "evt_003",
-        {
-          "createdAt": "2026-07-01T11:20:00Z",
-          "clienteId": "cli_003",
+          "clienteId": "cli_002",
           "usuarioId": "usr_001",
+          "paqueteId": "paq_001",
+          "fechaHora": "2026-07-06T18:00:00Z"
+        }
+      },
+      {
+        "documentId": "evt_003",
+        "fields": {
           "tipo": "boda",
+          "createdAt": "2026-07-01T11:20:00Z",
           "eventoId": "evt_003",
           "estado": "programado",
           "ubicacion": "Santiago Centro",
-          "fechaHora": "2026-07-12T16:30:00Z",
-          "paqueteId": "paq_003"
+          "usuarioId": "usr_001",
+          "clienteId": "cli_003",
+          "paqueteId": "paq_003",
+          "fechaHora": "2026-07-12T16:30:00Z"
         }
-      ]
+      }
     ],
     "pagos": [
-      [
-        "pag_001",
-        {
-          "pagoId": "pag_001",
+      {
+        "documentId": "pag_001",
+        "fields": {
           "eventoId": "evt_001",
+          "fechaPago": "2026-07-01T12:00:00Z",
           "nota": "Abono inicial",
           "monto": 3000,
-          "metodo": "transferencia",
-          "fechaPago": "2026-07-01T12:00:00Z"
+          "pagoId": "pag_001",
+          "metodo": "transferencia"
         }
-      ],
-      [
-        "pag_002",
-        {
-          "fechaPago": "2026-07-01T12:10:00Z",
-          "metodo": "efectivo",
-          "pagoId": "pag_002",
+      },
+      {
+        "documentId": "pag_002",
+        "fields": {
           "eventoId": "evt_002",
+          "fechaPago": "2026-07-01T12:10:00Z",
           "nota": "Reserva de fecha",
-          "monto": 1500
+          "monto": 1500,
+          "pagoId": "pag_002",
+          "metodo": "efectivo"
         }
-      ],
-      [
-        "pag_003",
-        {
-          "pagoId": "pag_003",
+      },
+      {
+        "documentId": "pag_003",
+        "fields": {
           "eventoId": "evt_003",
+          "fechaPago": "2026-07-01T12:20:00Z",
           "nota": "Separacion de paquete premium",
           "monto": 5000,
-          "metodo": "transferencia",
-          "fechaPago": "2026-07-01T12:20:00Z"
+          "pagoId": "pag_003",
+          "metodo": "transferencia"
         }
-      ]
+      }
     ]
-  }
+  },
+  "status": "clean_firestore_only_official_collections"
 }
