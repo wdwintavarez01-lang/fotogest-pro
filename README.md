@@ -61,4 +61,11 @@ El modelo del prototipo corresponde al DER de Semana 4:
 - paquetes
 - pagos
 
-El script de creacion y datos de prueba se entrega en `database/fotogest_pro_semana4.sql`.
+La base oficial seleccionada para el proyecto es Firebase Firestore. Los archivos principales son:
+
+- `database/firestore_modelo_fotogest_pro.md`
+- `database/firestore_seed_data.json`
+- `database/firestore_seed_fotogest_pro.js`
+- `database/firestore.rules`
+
+El script `database/fotogest_pro_semana4.sql` queda como validacion local equivalente del modelo logico para comprobar relaciones y datos de prueba sin depender de credenciales de Firebase.

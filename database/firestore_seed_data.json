@@ -1,0 +1,141 @@
+{
+  "usuarios": [
+    {
+      "usuarioId": "usr_001",
+      "nombre": "Edwin Tavarez",
+      "email": "edwin.tavarez@example.com",
+      "rol": "fotografo",
+      "activo": true,
+      "createdAt": "2026-07-01T09:00:00"
+    },
+    {
+      "usuarioId": "usr_002",
+      "nombre": "Asistente Demo",
+      "email": "asistente@example.com",
+      "rol": "asistente",
+      "activo": true,
+      "createdAt": "2026-07-01T09:10:00"
+    },
+    {
+      "usuarioId": "usr_003",
+      "nombre": "Admin FotoGest",
+      "email": "admin@example.com",
+      "rol": "administrador",
+      "activo": true,
+      "createdAt": "2026-07-01T09:20:00"
+    }
+  ],
+  "clientes": [
+    {
+      "clienteId": "cli_001",
+      "usuarioId": "usr_001",
+      "nombre": "Maria Fernandez",
+      "telefono": "809-555-1101",
+      "notas": "Prefiere contacto por WhatsApp",
+      "createdAt": "2026-07-01T10:00:00"
+    },
+    {
+      "clienteId": "cli_002",
+      "usuarioId": "usr_001",
+      "nombre": "Jose Ramirez",
+      "telefono": "809-555-2202",
+      "notas": "Solicita album impreso",
+      "createdAt": "2026-07-01T10:05:00"
+    },
+    {
+      "clienteId": "cli_003",
+      "usuarioId": "usr_001",
+      "nombre": "Laura Gomez",
+      "telefono": "809-555-3303",
+      "notas": "Evento en iglesia y recepcion",
+      "createdAt": "2026-07-01T10:10:00"
+    }
+  ],
+  "paquetes": [
+    {
+      "paqueteId": "paq_001",
+      "nombre": "Basico Evento",
+      "descripcion": "20 fotos editadas y entrega digital",
+      "precio": 3500,
+      "activo": true,
+      "createdAt": "2026-07-01T10:20:00"
+    },
+    {
+      "paqueteId": "paq_002",
+      "nombre": "Premium Familiar",
+      "descripcion": "40 fotos editadas, album digital y 5 impresas",
+      "precio": 6500,
+      "activo": true,
+      "createdAt": "2026-07-01T10:25:00"
+    },
+    {
+      "paqueteId": "paq_003",
+      "nombre": "Cobertura Completa",
+      "descripcion": "80 fotos editadas, album impreso y entrega express",
+      "precio": 12000,
+      "activo": true,
+      "createdAt": "2026-07-01T10:30:00"
+    }
+  ],
+  "eventos": [
+    {
+      "eventoId": "evt_001",
+      "clienteId": "cli_001",
+      "paqueteId": "paq_002",
+      "usuarioId": "usr_001",
+      "tipo": "bautizo",
+      "fechaHora": "2026-07-05T15:00:00",
+      "ubicacion": "Parroquia San Judas",
+      "estado": "programado",
+      "createdAt": "2026-07-01T11:00:00"
+    },
+    {
+      "eventoId": "evt_002",
+      "clienteId": "cli_002",
+      "paqueteId": "paq_001",
+      "usuarioId": "usr_001",
+      "tipo": "cumpleanos",
+      "fechaHora": "2026-07-06T18:00:00",
+      "ubicacion": "Salon Vista Alegre",
+      "estado": "en_proceso",
+      "createdAt": "2026-07-01T11:10:00"
+    },
+    {
+      "eventoId": "evt_003",
+      "clienteId": "cli_003",
+      "paqueteId": "paq_003",
+      "usuarioId": "usr_001",
+      "tipo": "boda",
+      "fechaHora": "2026-07-12T16:30:00",
+      "ubicacion": "Santiago Centro",
+      "estado": "programado",
+      "createdAt": "2026-07-01T11:20:00"
+    }
+  ],
+  "pagos": [
+    {
+      "pagoId": "pag_001",
+      "eventoId": "evt_001",
+      "monto": 3000,
+      "metodo": "transferencia",
+      "fechaPago": "2026-07-01T12:00:00",
+      "nota": "Abono inicial"
+    },
+    {
+      "pagoId": "pag_002",
+      "eventoId": "evt_002",
+      "monto": 1500,
+      "metodo": "efectivo",
+      "fechaPago": "2026-07-01T12:10:00",
+      "nota": "Reserva de fecha"
+    },
+    {
+      "pagoId": "pag_003",
+      "eventoId": "evt_003",
+      "monto": 5000,
+      "metodo": "transferencia",
+      "fechaPago": "2026-07-01T12:20:00",
+      "nota": "Separacion de paquete premium"
+    }
+  ]
+}
