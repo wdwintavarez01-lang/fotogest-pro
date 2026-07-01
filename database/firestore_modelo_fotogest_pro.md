@@ -82,12 +82,15 @@ La base oficial seleccionada para FotoGest Pro es Firebase Firestore, una base d
 }
 ```
 
-## Por que tambien existe un archivo SQL
-
-El archivo `fotogest_pro_semana4.sql` sirve como validacion local del modelo logico: permite comprobar llaves, relaciones y datos de prueba sin depender de credenciales de Firebase. No reemplaza a Firestore. La implementacion prevista de la aplicacion es Firestore, representada por:
+## Archivos de implementacion
 
 - `firestore_modelo_fotogest_pro.md`
 - `firestore_seed_data.json`
 - `firestore_seed_fotogest_pro.js`
 - `firestore.rules`
 
+La base real se encuentra en Firebase Console:
+
+```text
+https://console.firebase.google.com/project/app-fotografia-881ef/firestore/databases/-default-/data
+```
