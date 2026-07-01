@@ -8,6 +8,7 @@ Esta carpeta contiene las evidencias principales de la Semana 4 para FotoGest Pr
 - `diagrama_entidad_relacion_fotogest.png`: diagrama ER con entidades, atributos principales y cardinalidades.
 - `mapa_navegacion_fotogest.png`: flujo de navegacion del prototipo.
 - `screenshots/`: capturas reales del prototipo Flutter.
+- `evidencia_base_datos/`: capturas de estructura, datos de prueba y conexion de la base de datos.
 
 ## Validaciones realizadas
 
