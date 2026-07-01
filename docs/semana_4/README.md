@@ -19,9 +19,11 @@ Esta carpeta contiene las evidencias principales de la Semana 4 para FotoGest Pr
 flutter analyze
 flutter test
 flutter build apk --release
+node tools/verify_firestore_connection.js
 ```
 
 Resultado: el proyecto compila correctamente y genera el APK release.
+La conexion con Firebase Cloud Firestore tambien fue verificada desde el entorno de desarrollo.
 
 ## Nota sobre Firebase
 
