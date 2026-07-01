@@ -1,0 +1,73 @@
+{
+  "projectId": "app-fotografia-881ef",
+  "database": "(default)",
+  "created": [
+    [
+      "usuarios",
+      "usr_001"
+    ],
+    [
+      "usuarios",
+      "usr_002"
+    ],
+    [
+      "usuarios",
+      "usr_003"
+    ],
+    [
+      "clientes",
+      "cli_001"
+    ],
+    [
+      "clientes",
+      "cli_002"
+    ],
+    [
+      "clientes",
+      "cli_003"
+    ],
+    [
+      "paquetes",
+      "paq_001"
+    ],
+    [
+      "paquetes",
+      "paq_002"
+    ],
+    [
+      "paquetes",
+      "paq_003"
+    ],
+    [
+      "eventos",
+      "evt_001"
+    ],
+    [
+      "eventos",
+      "evt_002"
+    ],
+    [
+      "eventos",
+      "evt_003"
+    ],
+    [
+      "pagos",
+      "pag_001"
+    ],
+    [
+      "pagos",
+      "pag_002"
+    ],
+    [
+      "pagos",
+      "pag_003"
+    ]
+  ],
+  "summary": {
+    "usuarios": 3,
+    "clientes": 3,
+    "paquetes": 3,
+    "eventos": 3,
+    "pagos": 3
+  }
+}

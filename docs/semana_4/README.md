@@ -28,6 +28,26 @@ Resultado: el proyecto compila correctamente y genera el APK release.
 
 El proyecto fue planteado desde el inicio con Firebase Authentication + Cloud Firestore. Por eso la implementacion oficial de datos se documenta como colecciones Firestore. El SQL incluido no cambia el stack; se usa solo como evidencia local de normalizacion y prueba del modelo conceptual.
 
+## Base Firestore real
+
+Proyecto Firebase: `app-fotografia-881ef`
+
+Base de datos: `(default)`
+
+Colecciones cargadas:
+
+- `usuarios`: 3 documentos
+- `clientes`: 3 documentos
+- `paquetes`: 3 documentos
+- `eventos`: 3 documentos
+- `pagos`: 3 documentos
+
+URL para ver la base:
+
+```text
+https://console.firebase.google.com/project/app-fotografia-881ef/firestore/databases/-default-/data
+```
+
 ## Pantallas implementadas
 
 - Login
