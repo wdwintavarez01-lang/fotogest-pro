@@ -10,6 +10,9 @@ class FotogestViewModel extends ChangeNotifier {
   FotogestViewModel(this._repository);
 
   final FotogestRepository _repository;
+  bool isLoading = false;
+  bool remoteDataLoaded = false;
+  String? connectionMessage;
 
   List<Client> get clients => _repository.getClients();
   List<PhotoEvent> get events => _repository.getEvents();
@@ -54,13 +57,52 @@ class FotogestViewModel extends ChangeNotifier {
     });
   }
 
-  void addClient({
+  Future<bool> loadRemoteData() async {
+    if (!_repository.hasFirebase) return false;
+
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      remoteDataLoaded = await _repository.loadRemoteData();
+      connectionMessage = remoteDataLoaded
+          ? 'Datos cargados desde Firebase'
+          : 'Usando datos locales del prototipo';
+      return remoteDataLoaded;
+    } catch (_) {
+      remoteDataLoaded = false;
+      connectionMessage =
+          'No se pudo leer Firebase. Revisa Authentication y reglas.';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> signIn({required String email, required String password}) async {
+    if (!_repository.hasFirebase) return true;
+
+    try {
+      await _repository.signIn(email, password);
+      await loadRemoteData();
+      connectionMessage = 'Sesion iniciada con Firebase';
+      return true;
+    } catch (_) {
+      connectionMessage =
+          'No se pudo iniciar sesion en Firebase. Se abrira el modo demo local.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> addClient({
     required String name,
     required String phone,
     String notes = '',
-  }) {
+  }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    _repository.addClient(
+    final savedRemotely = await _repository.addClient(
       Client(
         id: 'cli_$timestamp',
         userId: 'usr_001',
@@ -70,5 +112,6 @@ class FotogestViewModel extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    return savedRemotely;
   }
 }

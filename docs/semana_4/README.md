@@ -24,10 +24,13 @@ node tools/verify_firestore_connection.js
 
 Resultado: el proyecto compila correctamente y genera el APK release.
 La conexion con Firebase Cloud Firestore tambien fue verificada desde el entorno de desarrollo.
+El APK incluye configuracion Firebase para Android y usa Cloud Firestore como fuente real cuando Authentication esta activo.
 
 ## Nota sobre Firebase
 
 El proyecto fue planteado desde el inicio con Firebase Authentication + Cloud Firestore. Por eso la implementacion oficial de datos se documenta como colecciones Firestore y la evidencia apunta a la base real del proyecto Firebase.
+
+Para activar el login real en la app, en Firebase Console se debe habilitar Authentication con proveedor Correo/Contrasena y crear el usuario de prueba `edwin.tavarez@example.com`.
 
 ## Base Firestore real
 

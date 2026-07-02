@@ -41,7 +41,34 @@ class DashboardScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            Text('Resumen', style: Theme.of(context).textTheme.headlineSmall),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Resumen',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                if (viewModel.isLoading)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Chip(
+                    avatar: Icon(
+                      viewModel.remoteDataLoaded
+                          ? Icons.cloud_done_outlined
+                          : Icons.phone_android_outlined,
+                      size: 18,
+                    ),
+                    label: Text(
+                      viewModel.remoteDataLoaded ? 'Firebase' : 'Local',
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 14),
             GridView.count(
               crossAxisCount: 2,

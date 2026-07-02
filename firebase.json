@@ -1,5 +1,26 @@
 {
   "firestore": {
     "rules": "database/firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "buildConfigurations": {
+          ".": {
+            "projectId": "app-fotografia-881ef",
+            "appId": "1:1066130845664:android:37171611e4b54464540585",
+            "fileOutput": "android/app/google-services.json"
+          }
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "app-fotografia-881ef",
+          "configurations": {
+            "android": "1:1066130845664:android:37171611e4b54464540585"
+          }
+        }
+      }
+    }
   }
 }

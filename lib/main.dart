@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'repositories/fotogest_repository.dart';
+import 'services/firebase_service.dart';
 import 'utils/app_theme.dart';
 import 'viewmodels/fotogest_view_model.dart';
 import 'views/client_form_screen.dart';
@@ -12,12 +15,16 @@ import 'views/packages_screen.dart';
 import 'views/payments_screen.dart';
 import 'widgets/app_scope.dart';
 
-void main() {
-  runApp(const FotoGestApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final firebaseReady = await FirebaseService.initialize();
+  runApp(FotoGestApp(firebaseReady: firebaseReady));
 }
 
 class FotoGestApp extends StatefulWidget {
-  const FotoGestApp({super.key});
+  const FotoGestApp({super.key, this.firebaseReady = false});
+
+  final bool firebaseReady;
 
   @override
   State<FotoGestApp> createState() => _FotoGestAppState();
@@ -29,7 +36,12 @@ class _FotoGestAppState extends State<FotoGestApp> {
   @override
   void initState() {
     super.initState();
-    viewModel = FotogestViewModel(FotogestRepository());
+    viewModel = FotogestViewModel(
+      widget.firebaseReady
+          ? FotogestRepository.firebase()
+          : FotogestRepository(),
+    );
+    unawaited(viewModel.loadRemoteData());
   }
 
   @override

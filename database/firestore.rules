@@ -7,7 +7,8 @@ service cloud.firestore {
     }
 
     match /usuarios/{usuarioId} {
-      allow read, write: if signedIn() && request.auth.uid == usuarioId;
+      allow read: if signedIn();
+      allow write: if signedIn();
     }
 
     match /clientes/{clienteId} {

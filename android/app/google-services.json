@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1066130845664",
+    "project_id": "app-fotografia-881ef",
+    "storage_bucket": "app-fotografia-881ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1066130845664:android:37171611e4b54464540585",
+        "android_client_info": {
+          "package_name": "com.edwintavarez.fotogest_pro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvo7wag40sV5E1NrOxZeif4xY-bErQL8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

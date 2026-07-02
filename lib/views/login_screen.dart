@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/app_scope.dart';
 import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
     text: 'edwin.tavarez@example.com',
   );
   final passwordController = TextEditingController(text: '123456');
+  bool isSubmitting = false;
 
   @override
   void dispose() {
@@ -27,6 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = AppScope.of(context);
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -83,16 +87,46 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     FilledButton.icon(
-                      icon: const Icon(Icons.login),
-                      label: const Text('Entrar'),
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            DashboardScreen.routeName,
-                          );
-                        }
-                      },
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login),
+                      label: Text(isSubmitting ? 'Entrando...' : 'Entrar'),
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              if (formKey.currentState!.validate()) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                setState(() {
+                                  isSubmitting = true;
+                                });
+                                final signedIn = await viewModel.signIn(
+                                  email: emailController.text,
+                                  password: passwordController.text,
+                                );
+                                if (!mounted) return;
+                                setState(() {
+                                  isSubmitting = false;
+                                });
+                                if (!signedIn &&
+                                    viewModel.connectionMessage != null) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        viewModel.connectionMessage!,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                navigator.pushReplacementNamed(
+                                  DashboardScreen.routeName,
+                                );
+                              }
+                            },
                     ),
                   ],
                 ),

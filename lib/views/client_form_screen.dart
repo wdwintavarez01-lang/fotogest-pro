@@ -16,6 +16,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final notesController = TextEditingController();
+  bool isSaving = false;
 
   @override
   void dispose() {
@@ -81,20 +82,43 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text('Guardar cliente'),
-                    onPressed: () {
-                      if (!formKey.currentState!.validate()) return;
-                      viewModel.addClient(
-                        name: nameController.text,
-                        phone: phoneController.text,
-                        notes: notesController.text,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cliente guardado')),
-                      );
-                      Navigator.pop(context);
-                    },
+                    icon: isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(isSaving ? 'Guardando...' : 'Guardar cliente'),
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            final messenger = ScaffoldMessenger.of(context);
+                            final navigator = Navigator.of(context);
+                            setState(() {
+                              isSaving = true;
+                            });
+                            final savedRemotely = await viewModel.addClient(
+                              name: nameController.text,
+                              phone: phoneController.text,
+                              notes: notesController.text,
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              isSaving = false;
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  savedRemotely
+                                      ? 'Cliente guardado en Firebase'
+                                      : 'Cliente guardado en modo local',
+                                ),
+                              ),
+                            );
+                            navigator.pop();
+                          },
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
