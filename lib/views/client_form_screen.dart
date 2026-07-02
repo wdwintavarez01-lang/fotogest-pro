@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/client.dart';
 import '../widgets/app_scope.dart';
 
 class ClientFormScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final notesController = TextEditingController();
+  Client? client;
+  bool didLoadArguments = false;
   bool isSaving = false;
 
   @override
@@ -29,9 +32,22 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
+    if (!didLoadArguments) {
+      didLoadArguments = true;
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+      if (arguments is Client) {
+        client = arguments;
+        nameController.text = arguments.name;
+        phoneController.text = arguments.phone;
+        notesController.text = arguments.notes;
+      }
+    }
+    final isEditing = client != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo cliente')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Editar cliente' : 'Nuevo cliente'),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -89,7 +105,13 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(isSaving ? 'Guardando...' : 'Guardar cliente'),
+                    label: Text(
+                      isSaving
+                          ? 'Guardando...'
+                          : isEditing
+                          ? 'Actualizar cliente'
+                          : 'Guardar cliente',
+                    ),
                     onPressed: isSaving
                         ? null
                         : () async {
@@ -99,11 +121,18 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             setState(() {
                               isSaving = true;
                             });
-                            final savedRemotely = await viewModel.addClient(
-                              name: nameController.text,
-                              phone: phoneController.text,
-                              notes: notesController.text,
-                            );
+                            final savedRemotely = isEditing
+                                ? await viewModel.updateClient(
+                                    client: client!,
+                                    name: nameController.text,
+                                    phone: phoneController.text,
+                                    notes: notesController.text,
+                                  )
+                                : await viewModel.addClient(
+                                    name: nameController.text,
+                                    phone: phoneController.text,
+                                    notes: notesController.text,
+                                  );
                             if (!mounted) return;
                             setState(() {
                               isSaving = false;

@@ -114,4 +114,27 @@ class FotogestViewModel extends ChangeNotifier {
     notifyListeners();
     return savedRemotely;
   }
+
+  Future<bool> updateClient({
+    required Client client,
+    required String name,
+    required String phone,
+    String notes = '',
+  }) async {
+    final savedRemotely = await _repository.updateClient(
+      client.copyWith(
+        name: name.trim(),
+        phone: phone.trim(),
+        notes: notes.trim(),
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> deleteClient(String clientId) async {
+    final deletedRemotely = await _repository.deleteClient(clientId);
+    notifyListeners();
+    return deletedRemotely;
+  }
 }

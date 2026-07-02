@@ -219,6 +219,54 @@ class FotogestRepository {
     return savedRemotely;
   }
 
+  Future<bool> updateClient(Client client) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('clientes').doc(client.id).update({
+          'clienteId': client.id,
+          'usuarioId': client.userId,
+          'nombre': client.name,
+          'telefono': client.phone,
+          'notas': client.notes,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    final index = _clients.indexWhere((savedClient) {
+      return savedClient.id == client.id;
+    });
+    if (index == -1) {
+      _clients.insert(0, client);
+    } else {
+      _clients[index] = client;
+    }
+    return savedRemotely;
+  }
+
+  Future<bool> deleteClient(String clientId) async {
+    var deletedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('clientes').doc(clientId).delete();
+        deletedRemotely = true;
+      } on FirebaseException {
+        deletedRemotely = false;
+      }
+    }
+
+    _clients.removeWhere((client) => client.id == clientId);
+    return deletedRemotely;
+  }
+
   static AppUser _userFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     return AppUser(
