@@ -16,6 +16,8 @@ import 'views/package_form_screen.dart';
 import 'views/packages_screen.dart';
 import 'views/payment_form_screen.dart';
 import 'views/payments_screen.dart';
+import 'views/sale_form_screen.dart';
+import 'views/sales_screen.dart';
 import 'widgets/app_scope.dart';
 
 Future<void> main() async {
@@ -80,6 +82,8 @@ class _FotoGestAppState extends State<FotoGestApp> {
           PaymentFormScreen.routeName: (_) => const PaymentFormScreen(),
           PackagesScreen.routeName: (_) => const PackagesScreen(),
           PackageFormScreen.routeName: (_) => const PackageFormScreen(),
+          SalesScreen.routeName: (_) => const SalesScreen(),
+          SaleFormScreen.routeName: (_) => const SaleFormScreen(),
         },
       ),
     );

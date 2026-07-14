@@ -2,23 +2,23 @@
 
 ## Descripcion del problema
 
-Fotografos independientes suelen manejar clientes, eventos, paquetes y pagos en
-notas, hojas de calculo o mensajes sueltos. Esto dificulta consultar saldos,
-recordar fechas y mantener un historial ordenado del servicio. FotoGest Pro
-organiza esa informacion en una aplicacion movil sencilla.
+Fotografos independientes suelen manejar clientes, eventos, ventas de fotos,
+servicios sueltos y pagos en notas, hojas de calculo o mensajes sueltos. Esto
+dificulta consultar saldos, recordar fechas y mantener un historial ordenado del
+servicio. FotoGest Pro organiza esa informacion en una aplicacion movil sencilla.
 
 ## Objetivo general
 
 Desarrollar una aplicacion movil funcional que permita gestionar clientes de un
-negocio fotografico y consultar eventos, pagos y paquetes desde una interfaz
-adaptada a dispositivos moviles.
+negocio fotografico, registrar eventos, vender fotos o servicios independientes
+y consultar cobros desde una interfaz adaptada a dispositivos moviles.
 
 ## Alcance de esta version
 
-Incluye inicio de sesion, dashboard, CRUD completo de clientes, consulta de
-eventos, consulta de pagos y consulta de paquetes fotograficos. No incluye
-subida de fotografias, facturacion fiscal, pagos en linea ni publicacion en
-tienda de aplicaciones.
+Incluye inicio de sesion, dashboard, CRUD de clientes, servicios, eventos,
+ventas independientes, registro de abonos e historial de cuentas pagadas. No
+incluye subida de fotografias, facturacion fiscal, pagos en linea ni publicacion
+en tienda de aplicaciones.
 
 ## Tecnologias utilizadas
 
@@ -47,17 +47,25 @@ Colecciones principales en Firestore:
 - `clientes`: clientes del fotografo.
 - `eventos`: sesiones o eventos fotograficos.
 - `paquetes`: paquetes de servicio.
-- `pagos`: abonos o pagos asociados a eventos.
+- `ventas`: fotos individuales, impresiones, ediciones, retoques o servicios
+  vendidos sin evento.
+- `pagos`: abonos asociados a eventos o ventas.
 
 ## Funcionalidad CRUD implementada
 
-La funcionalidad central completa se implemento sobre `clientes`:
+La funcionalidad central completa se implemento sobre clientes, servicios,
+eventos y ventas:
 
 - Crear cliente desde el formulario.
 - Leer clientes desde la lista.
 - Ver detalle del cliente en una hoja inferior.
 - Editar cliente existente.
 - Eliminar cliente con confirmacion.
+- Crear, editar y eliminar servicios fotograficos.
+- Crear, editar y eliminar eventos asociados a cliente y servicio.
+- Crear, editar y eliminar ventas independientes sin evento.
+- Registrar abonos para eventos o ventas pendientes.
+- Consultar historial de cuentas pagadas.
 
 ## Validaciones
 
@@ -65,12 +73,16 @@ La funcionalidad central completa se implemento sobre `clientes`:
 - La contrasena es obligatoria y debe tener al menos 6 caracteres.
 - El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.
 - El telefono es obligatorio y debe contener al menos 10 digitos.
+- Los precios y montos deben ser mayores que cero.
+- Los abonos no pueden superar el saldo pendiente.
+- Una venta debe tener cliente, descripcion, cantidad y precio unitario.
 
 ## Decisiones de diseno
 
 Se eligio Firestore porque permite persistencia remota, integracion directa con
 Flutter y una estructura flexible por colecciones. Se mantuvieron datos locales
-de respaldo para que la app pueda abrirse en modo demo si Firebase no responde.
+de respaldo y acceso offline con credenciales guardadas para que la app pueda
+abrirse cuando no haya conexion.
 
 ## Pruebas
 

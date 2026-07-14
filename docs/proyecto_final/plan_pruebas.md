@@ -10,16 +10,17 @@
 | 6 | Validar telefono | Crear cliente con telefono menor a 10 digitos. | El formulario muestra mensaje de telefono valido. | Aprobado |
 | 7 | Ver detalle de cliente | Tocar un cliente en la lista. | Se abre detalle con telefono, notas y acciones. | Aprobado |
 | 8 | Editar cliente | Abrir detalle, presionar Editar y guardar cambios. | La lista muestra los datos actualizados. | Aprobado |
-| 9 | Eliminar cliente | Presionar Eliminar y confirmar. | El cliente desaparece de la lista. | Aprobado |
+| 9 | Eliminar cliente | Presionar Eliminar y confirmar. | El cliente desaparece de la lista si no tiene eventos ni ventas. | Aprobado |
 | 10 | Crear servicio | Ir a Servicios, presionar Nuevo y guardar nombre, descripcion y precio. | El servicio aparece disponible para nuevos eventos. | Aprobado |
 | 11 | Editar servicio | Abrir un servicio y modificar precio o estado. | El cambio se refleja en la lista. | Aprobado |
 | 12 | Crear evento | Ir a Eventos, presionar Nuevo y seleccionar cliente, servicio, fecha y ubicacion. | El evento aparece en la agenda y en el Dashboard. | Aprobado |
 | 13 | Editar evento | Abrir un evento y cambiar estado o datos principales. | La agenda muestra los datos actualizados. | Aprobado |
-| 14 | Registrar abono | Desde Eventos o Pagos registrar un monto para un evento pendiente. | El abono reduce el saldo pendiente. | Aprobado |
-| 15 | Validar monto de pago | Registrar un pago mayor al saldo pendiente. | El formulario bloquea el monto y muestra mensaje. | Aprobado |
-| 16 | Historial de pagos | Completar el pago total de un evento. | El evento sale de Pendientes y aparece en Historial. | Aprobado |
-| 17 | Consultar abonos | Abrir el Historial y ver el detalle de abonos. | La app muestra los abonos sin botones de editar o eliminar. | Aprobado |
-| 18 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
+| 14 | Crear venta independiente | Ir a Ventas, presionar Nueva y guardar una foto individual o servicio suelto. | La venta aparece en la lista y queda disponible para cobrar. | Aprobado |
+| 15 | Registrar abono | Desde Eventos, Ventas o Pagos registrar un monto para una cuenta pendiente. | El abono reduce el saldo pendiente. | Aprobado |
+| 16 | Validar monto de pago | Registrar un pago mayor al saldo pendiente. | El formulario bloquea el monto y muestra mensaje. | Aprobado |
+| 17 | Historial de pagos | Completar el pago total de un evento o venta. | La cuenta sale de Pendientes y aparece en Historial. | Aprobado |
+| 18 | Consultar abonos | Abrir el Historial y ver el detalle de abonos. | La app muestra los abonos sin botones de editar o eliminar. | Aprobado |
+| 19 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
 
 ## Errores corregidos
 
@@ -27,7 +28,8 @@
 - Se evito que la app falle si Firestore contiene referencias incompletas.
 - Se reforzaron validaciones de correo, contrasena, nombre y telefono.
 - Se agrego vista de detalle para completar mejor el flujo de clientes.
-- Se activaron formularios reales para servicios, eventos y pagos.
-- Se bloqueo el borrado de clientes o servicios que ya estan asociados a eventos.
+- Se activaron formularios reales para servicios, eventos, ventas y pagos.
+- Se bloqueo el borrado de clientes con eventos o ventas registradas.
 - Se agrego acceso offline usando credenciales previamente validadas.
-- Se rediseño Pagos como cobros pendientes e historial de eventos pagados.
+- Se rediseno Pagos como cobros pendientes e historial de cuentas pagadas.
+- Se agrego Ventas para fotos individuales, impresiones, retoques y servicios independientes de eventos.

@@ -10,7 +10,8 @@ La base oficial seleccionada para FotoGest Pro es Firebase Firestore, una base d
 | clientes | `clientes` | Cada cliente guarda `usuarioId`, que referencia al usuario que lo registro. |
 | paquetes | `paquetes` | Catalogo de servicios fotograficos con precio. |
 | eventos | `eventos` | Cada evento guarda `clienteId`, `paqueteId` y `usuarioId`. |
-| pagos | `pagos` | Cada pago guarda `eventoId`, que lo vincula al evento fotografico. |
+| ventas | `ventas` | Ventas independientes de fotos, impresiones, ediciones o servicios sueltos. |
+| pagos | `pagos` | Cada pago guarda `eventoId` o `ventaId`, segun la cuenta que se abona. |
 
 ## Colecciones
 
@@ -69,12 +70,31 @@ La base oficial seleccionada para FotoGest Pro es Firebase Firestore, una base d
 }
 ```
 
+### ventas
+
+```json
+{
+  "ventaId": "ven_001",
+  "clienteId": "cli_001",
+  "usuarioId": "usr_001",
+  "tipo": "foto_individual",
+  "descripcion": "Foto digital editada para perfil profesional",
+  "cantidad": 3,
+  "precioUnitario": 450,
+  "total": 1350,
+  "fechaVenta": "2026-07-03T10:00:00",
+  "estado": "pendiente",
+  "notas": "Entrega por WhatsApp"
+}
+```
+
 ### pagos
 
 ```json
 {
   "pagoId": "pag_001",
   "eventoId": "evt_001",
+  "ventaId": "",
   "monto": 3000,
   "metodo": "transferencia",
   "fechaPago": "2026-07-01T12:00:00",

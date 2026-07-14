@@ -3,7 +3,7 @@
 ## Proposito de la aplicacion
 
 FotoGest Pro ayuda a fotografos de eventos a organizar clientes, eventos,
-servicios y pagos desde una aplicacion movil.
+servicios, ventas independientes y pagos desde una aplicacion movil.
 
 ## Requisitos
 
@@ -62,12 +62,27 @@ Desde esta pantalla se puede:
 La pantalla **Pagos** se organiza en dos pestañas:
 
 - **Pendientes**: muestra primero los eventos que todavia tienen saldo por
-  cobrar y permite registrar abonos.
-- **Historial**: muestra los eventos que ya fueron pagados por completo y
-  permite consultar sus abonos sin editar ni eliminar pagos directamente.
+  cobrar y tambien las ventas independientes pendientes.
+- **Historial**: muestra los eventos y ventas que ya fueron pagados por completo
+  y permite consultar sus abonos sin editar ni eliminar pagos directamente.
 
-Cuando el saldo pendiente de un evento llega a cero, deja de aparecer en
+Cuando el saldo pendiente de un evento o venta llega a cero, deja de aparecer en
 Pendientes y pasa automaticamente al Historial.
+
+## Ventas
+
+La pantalla **Ventas** permite registrar ingresos que no dependen de un evento,
+por ejemplo:
+
+- Foto individual.
+- Impresion.
+- Edicion.
+- Retoque.
+- Sesion rapida.
+- Servicio suelto.
+
+Cada venta se asocia a un cliente, tiene cantidad, precio unitario, total,
+abonos y saldo pendiente.
 
 ## Servicios
 

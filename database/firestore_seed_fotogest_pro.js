@@ -36,6 +36,7 @@ async function main() {
   await seedCollection('clientes', seedData.clientes, 'clienteId');
   await seedCollection('paquetes', seedData.paquetes, 'paqueteId');
   await seedCollection('eventos', seedData.eventos, 'eventoId');
+  await seedCollection('ventas', seedData.ventas, 'ventaId');
   await seedCollection('pagos', seedData.pagos, 'pagoId');
 
   console.log('OK seed Firestore completado para FotoGest Pro');

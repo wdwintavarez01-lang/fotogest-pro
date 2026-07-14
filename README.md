@@ -3,10 +3,10 @@
 Sistema de gestion para fotografos de eventos.
 
 Aplicacion movil desarrollada en Flutter para organizar clientes, eventos,
-servicios fotograficos y pagos. El flujo central permite iniciar sesion,
-consultar un resumen del negocio y ejecutar operaciones completas de clientes,
-servicios, eventos y cobros conectadas con Firebase Authentication y Cloud
-Firestore.
+servicios fotograficos, ventas independientes y pagos. El flujo central permite
+iniciar sesion, consultar un resumen del negocio y ejecutar operaciones
+completas de clientes, servicios, eventos, ventas y cobros conectadas con
+Firebase Authentication y Cloud Firestore.
 
 ## Stack
 
@@ -40,6 +40,7 @@ docs/semana_4/
 - Detalle de cliente
 - Formulario de cliente para crear y editar
 - Eventos
+- Ventas independientes
 - Pagos
 - Servicios fotograficos
 
@@ -50,13 +51,15 @@ Flujo funcional principal:
 - Crear, consultar, editar y eliminar clientes sin eventos asociados.
 - Crear, consultar, editar y eliminar servicios fotograficos.
 - Crear, consultar, editar y eliminar eventos asociados a cliente y servicio.
-- Registrar abonos asociados a eventos pendientes.
-- Priorizar cobros pendientes y mover eventos pagados al historial.
+- Crear ventas independientes para fotos sueltas, impresiones, retoques o
+  servicios sin crear evento.
+- Registrar abonos asociados a eventos o ventas pendientes.
+- Priorizar cobros pendientes y mover cuentas pagadas al historial.
 - Calcular abonado y pendiente desde los abonos registrados.
 - Entrar en modo offline usando credenciales guardadas previamente.
 
 La base remota usa las colecciones `usuarios`, `clientes`, `paquetes`,
-`eventos` y `pagos`.
+`eventos`, `ventas` y `pagos`.
 
 ## Credenciales de prueba
 
@@ -99,6 +102,7 @@ El modelo del prototipo corresponde al DER de Semana 4:
 - usuarios
 - clientes
 - eventos
+- ventas
 - paquetes
 - pagos
 

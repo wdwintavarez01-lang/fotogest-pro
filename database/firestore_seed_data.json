@@ -112,6 +112,50 @@
       "createdAt": "2026-07-01T11:20:00"
     }
   ],
+  "ventas": [
+    {
+      "ventaId": "ven_001",
+      "clienteId": "cli_001",
+      "usuarioId": "usr_001",
+      "tipo": "foto_individual",
+      "descripcion": "Foto digital editada para perfil profesional",
+      "cantidad": 3,
+      "precioUnitario": 450,
+      "total": 1350,
+      "fechaVenta": "2026-07-03T10:00:00",
+      "estado": "pendiente",
+      "notas": "Entrega por WhatsApp",
+      "createdAt": "2026-07-03T10:00:00"
+    },
+    {
+      "ventaId": "ven_002",
+      "clienteId": "cli_002",
+      "usuarioId": "usr_001",
+      "tipo": "impresion",
+      "descripcion": "Impresion 8x10 con retoque basico",
+      "cantidad": 2,
+      "precioUnitario": 650,
+      "total": 1300,
+      "fechaVenta": "2026-07-04T11:30:00",
+      "estado": "pendiente",
+      "notas": "Recoger en estudio",
+      "createdAt": "2026-07-04T11:30:00"
+    },
+    {
+      "ventaId": "ven_003",
+      "clienteId": "cli_003",
+      "usuarioId": "usr_001",
+      "tipo": "servicio",
+      "descripcion": "Retoque express de 5 fotografias",
+      "cantidad": 1,
+      "precioUnitario": 2500,
+      "total": 2500,
+      "fechaVenta": "2026-07-05T09:00:00",
+      "estado": "pendiente",
+      "notas": "Entrega digital",
+      "createdAt": "2026-07-05T09:00:00"
+    }
+  ],
   "pagos": [
     {
       "pagoId": "pag_001",
@@ -136,6 +180,14 @@
       "metodo": "transferencia",
       "fechaPago": "2026-07-01T12:20:00",
       "nota": "Separacion de paquete premium"
+    },
+    {
+      "pagoId": "pag_004",
+      "ventaId": "ven_001",
+      "monto": 450,
+      "metodo": "efectivo",
+      "fechaPago": "2026-07-03T10:30:00",
+      "nota": "Abono por primera foto"
     }
   ]
 }

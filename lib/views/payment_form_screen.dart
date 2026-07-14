@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../models/photo_event.dart';
+import '../models/photo_sale.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_scope.dart';
 import 'event_form_screen.dart';
+import 'sale_form_screen.dart';
 
 class PaymentFormArguments {
-  const PaymentFormArguments({this.event});
+  const PaymentFormArguments({this.event, this.sale});
 
   final PhotoEvent? event;
+  final PhotoSale? sale;
 }
 
 class PaymentFormScreen extends StatefulWidget {
@@ -24,7 +27,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   final formKey = GlobalKey<FormState>();
   final amountController = TextEditingController();
   final noteController = TextEditingController();
-  String? selectedEventId;
+  String? selectedTargetKey;
   String method = 'efectivo';
   DateTime paidAt = DateTime.now();
   bool didLoadArguments = false;
@@ -42,31 +45,51 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
-    final events = viewModel.pendingPaymentEvents;
+    final targets = [
+      for (final event in viewModel.pendingPaymentEvents)
+        _PaymentTarget.event(
+          event: event,
+          clientName: viewModel.clientFor(event.clientId).name,
+          description: event.type,
+          pending: viewModel.pendingForEvent(event.id),
+        ),
+      for (final sale in viewModel.pendingSales)
+        _PaymentTarget.sale(
+          sale: sale,
+          clientName: viewModel.clientFor(sale.clientId).name,
+          description: sale.description,
+          pending: viewModel.pendingForSale(sale.id),
+        ),
+    ];
 
     if (!didLoadArguments) {
       didLoadArguments = true;
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments is PaymentFormArguments) {
-        selectedEventId = arguments.event?.id;
+        if (arguments.event != null) {
+          selectedTargetKey = 'event:${arguments.event!.id}';
+        }
+        if (arguments.sale != null) {
+          selectedTargetKey = 'sale:${arguments.sale!.id}';
+        }
       } else if (arguments is PhotoEvent) {
-        selectedEventId = arguments.id;
+        selectedTargetKey = 'event:${arguments.id}';
+      } else if (arguments is PhotoSale) {
+        selectedTargetKey = 'sale:${arguments.id}';
       }
 
-      selectedEventId ??= events.isEmpty ? null : events.first.id;
+      if (!targets.any((target) => target.key == selectedTargetKey)) {
+        selectedTargetKey = targets.isEmpty ? null : targets.first.key;
+      }
     }
 
-    final selectedEvent = selectedEventId == null
-        ? null
-        : viewModel.eventFor(selectedEventId!);
-    final pending = selectedEvent == null
-        ? 0.0
-        : viewModel.pendingForEvent(selectedEvent.id);
+    final selectedTarget = _selectedTarget(targets, selectedTargetKey);
+    final pending = selectedTarget?.pending ?? 0.0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Registrar abono')),
       body: SafeArea(
-        child: events.isEmpty
+        child: targets.isEmpty
             ? _MissingEventState()
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -77,26 +100,25 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         DropdownButtonFormField<String>(
-                          initialValue: selectedEventId,
+                          initialValue: selectedTargetKey,
                           isExpanded: true,
                           decoration: const InputDecoration(
-                            labelText: 'Evento a cobrar',
-                            prefixIcon: Icon(Icons.event_note_outlined),
+                            labelText: 'Cuenta a cobrar',
+                            prefixIcon: Icon(Icons.account_balance_wallet),
                           ),
                           items: [
-                            for (final event in events)
+                            for (final target in targets)
                               DropdownMenuItem(
-                                value: event.id,
+                                value: target.key,
                                 child: Text(
-                                  '${viewModel.clientFor(event.clientId).name} - '
-                                  '${event.type}',
+                                  target.title,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                           ],
                           onChanged: (value) {
                             setState(() {
-                              selectedEventId = value;
+                              selectedTargetKey = value;
                             });
                           },
                           validator: (value) {
@@ -107,15 +129,12 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        if (selectedEvent != null)
+                        if (selectedTarget != null)
                           Card(
                             child: ListTile(
                               leading: const Icon(Icons.account_balance_wallet),
                               title: const Text('Saldo pendiente'),
-                              subtitle: Text(
-                                '${viewModel.clientFor(selectedEvent.clientId).name} - '
-                                '${viewModel.packageFor(selectedEvent.packageId).name}',
-                              ),
+                              subtitle: Text(selectedTarget.subtitle),
                               trailing: Text(
                                 Formatters.money(pending),
                                 style: Theme.of(context).textTheme.titleMedium,
@@ -210,7 +229,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                   });
                                   final savedRemotely = await viewModel
                                       .addPayment(
-                                        eventId: selectedEventId!,
+                                        eventId: selectedTarget!.eventId,
+                                        saleId: selectedTarget.saleId,
                                         amount: _parseAmount(
                                           amountController.text,
                                         )!,
@@ -267,6 +287,16 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     return double.tryParse(normalized);
   }
 
+  _PaymentTarget? _selectedTarget(
+    List<_PaymentTarget> targets,
+    String? selectedKey,
+  ) {
+    for (final target in targets) {
+      if (target.key == selectedKey) return target;
+    }
+    return null;
+  }
+
   String _methodLabel(String value) {
     return switch (value) {
       'efectivo' => 'Efectivo',
@@ -290,19 +320,82 @@ class _MissingEventState extends StatelessWidget {
           const Icon(Icons.info_outline, size: 42),
           const SizedBox(height: 16),
           Text(
-            'No hay eventos pendientes por cobrar.',
+            'No hay eventos ni ventas pendientes por cobrar.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 20),
-          FilledButton.icon(
-            icon: const Icon(Icons.event_note),
-            label: const Text('Crear evento'),
-            onPressed: () =>
-                Navigator.pushNamed(context, EventFormScreen.routeName),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.event_note),
+                  label: const Text('Evento'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, EventFormScreen.routeName),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  label: const Text('Venta'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, SaleFormScreen.routeName),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+class _PaymentTarget {
+  const _PaymentTarget({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.pending,
+    this.eventId = '',
+    this.saleId = '',
+  });
+
+  factory _PaymentTarget.event({
+    required PhotoEvent event,
+    required String clientName,
+    required String description,
+    required double pending,
+  }) {
+    return _PaymentTarget(
+      key: 'event:${event.id}',
+      title: '$clientName - $description',
+      subtitle: 'Evento fotografico',
+      pending: pending,
+      eventId: event.id,
+    );
+  }
+
+  factory _PaymentTarget.sale({
+    required PhotoSale sale,
+    required String clientName,
+    required String description,
+    required double pending,
+  }) {
+    return _PaymentTarget(
+      key: 'sale:${sale.id}',
+      title: '$clientName - $description',
+      subtitle: 'Venta independiente',
+      pending: pending,
+      saleId: sale.id,
+    );
+  }
+
+  final String key;
+  final String title;
+  final String subtitle;
+  final double pending;
+  final String eventId;
+  final String saleId;
 }

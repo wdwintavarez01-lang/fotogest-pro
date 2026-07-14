@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/payment.dart';
 import '../models/photo_event.dart';
+import '../models/photo_sale.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_scope.dart';
@@ -17,7 +18,9 @@ class PaymentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
     final pendingEvents = viewModel.pendingPaymentEvents;
+    final pendingSales = viewModel.pendingSales;
     final paidEvents = viewModel.paidEvents;
+    final paidSales = viewModel.paidSales;
 
     return DefaultTabController(
       length: 2,
@@ -38,8 +41,8 @@ class PaymentsScreen extends StatelessWidget {
         body: SafeArea(
           child: TabBarView(
             children: [
-              _PendingPaymentsTab(events: pendingEvents),
-              _PaymentHistoryTab(events: paidEvents),
+              _PendingPaymentsTab(events: pendingEvents, sales: pendingSales),
+              _PaymentHistoryTab(events: paidEvents, sales: paidSales),
             ],
           ),
         ),
@@ -49,185 +52,351 @@ class PaymentsScreen extends StatelessWidget {
 }
 
 class _PendingPaymentsTab extends StatelessWidget {
-  const _PendingPaymentsTab({required this.events});
+  const _PendingPaymentsTab({required this.events, required this.sales});
 
   final List<PhotoEvent> events;
+  final List<PhotoSale> sales;
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = AppScope.of(context);
-    if (events.isEmpty) {
+    if (events.isEmpty && sales.isEmpty) {
       return const _EmptyState(
         icon: Icons.check_circle_outline,
         title: 'No hay cobros pendientes',
-        message: 'Los eventos con saldo completo apareceran en Historial.',
+        message: 'Los eventos y ventas pagados apareceran en Historial.',
       );
     }
 
-    return ListView.separated(
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: events.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _CollectionSummary(events: events);
-        }
-        final event = events[index - 1];
-        final client = viewModel.clientFor(event.clientId);
-        final service = viewModel.packageFor(event.packageId);
-        final paid = viewModel.paidForEvent(event.id);
-        final pending = viewModel.pendingForEvent(event.id);
-        final progress = service.price <= 0 ? 0.0 : paid / service.price;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet_outlined),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        client.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    Text(Formatters.date(event.dateTime)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text('${event.type} - ${service.name}'),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: progress.clamp(0, 1),
-                    minHeight: 8,
-                    backgroundColor: AppTheme.line,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _AmountLabel(
-                        label: 'Total',
-                        amount: service.price,
-                      ),
-                    ),
-                    Expanded(
-                      child: _AmountLabel(label: 'Abonado', amount: paid),
-                    ),
-                    Expanded(
-                      child: _AmountLabel(
-                        label: 'Pendiente',
-                        amount: pending,
-                        highlight: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                FilledButton.icon(
-                  icon: const Icon(Icons.payments_outlined),
-                  label: const Text('Abonar'),
-                  onPressed: () => Navigator.pushNamed(
-                    context,
-                    PaymentFormScreen.routeName,
-                    arguments: PaymentFormArguments(event: event),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      children: [
+        _CollectionSummary(events: events, sales: sales),
+        if (events.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const _SectionTitle(title: 'Eventos por cobrar'),
+          const SizedBox(height: 10),
+          for (final event in events) ...[
+            _PendingEventCard(event: event),
+            const SizedBox(height: 10),
+          ],
+        ],
+        if (sales.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          const _SectionTitle(title: 'Ventas por cobrar'),
+          const SizedBox(height: 10),
+          for (final sale in sales) ...[
+            _PendingSaleCard(sale: sale),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
     );
   }
 }
 
 class _PaymentHistoryTab extends StatelessWidget {
-  const _PaymentHistoryTab({required this.events});
+  const _PaymentHistoryTab({required this.events, required this.sales});
 
   final List<PhotoEvent> events;
+  final List<PhotoSale> sales;
+
+  @override
+  Widget build(BuildContext context) {
+    if (events.isEmpty && sales.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.history_outlined,
+        title: 'Todavia no hay historial',
+        message: 'Cuando una cuenta quede pagada completa, aparecera aqui.',
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        if (events.isNotEmpty) ...[
+          const _SectionTitle(title: 'Eventos pagados'),
+          const SizedBox(height: 10),
+          for (final event in events) ...[
+            _PaidEventCard(event: event),
+            const SizedBox(height: 10),
+          ],
+        ],
+        if (sales.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          const _SectionTitle(title: 'Ventas pagadas'),
+          const SizedBox(height: 10),
+          for (final sale in sales) ...[
+            _PaidSaleCard(sale: sale),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _PendingEventCard extends StatelessWidget {
+  const _PendingEventCard({required this.event});
+
+  final PhotoEvent event;
 
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
-    if (events.isEmpty) {
-      return const _EmptyState(
-        icon: Icons.history_outlined,
-        title: 'Todavia no hay historial',
-        message: 'Cuando un evento quede pagado completo, aparecera aqui.',
-      );
-    }
+    final client = viewModel.clientFor(event.clientId);
+    final service = viewModel.packageFor(event.packageId);
+    final paid = viewModel.paidForEvent(event.id);
+    final pending = viewModel.pendingForEvent(event.id);
+    final progress = service.price <= 0 ? 0.0 : paid / service.price;
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: events.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final event = events[index];
-        final client = viewModel.clientFor(event.clientId);
-        final service = viewModel.packageFor(event.packageId);
-        final payments = viewModel.paymentsForEvent(event.id);
-        final lastPayment = viewModel.lastPaymentForEvent(event.id);
+    return _PendingCard(
+      icon: Icons.event_note_outlined,
+      title: client.name,
+      subtitle: '${event.type} - ${service.name}',
+      detail: Formatters.date(event.dateTime),
+      total: service.price,
+      paid: paid,
+      pending: pending,
+      progress: progress,
+      onPay: () => Navigator.pushNamed(
+        context,
+        PaymentFormScreen.routeName,
+        arguments: PaymentFormArguments(event: event),
+      ),
+    );
+  }
+}
 
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+class _PendingSaleCard extends StatelessWidget {
+  const _PendingSaleCard({required this.sale});
+
+  final PhotoSale sale;
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = AppScope.of(context);
+    final client = viewModel.clientFor(sale.clientId);
+    final paid = viewModel.paidForSale(sale.id);
+    final pending = viewModel.pendingForSale(sale.id);
+    final progress = sale.total <= 0 ? 0.0 : paid / sale.total;
+
+    return _PendingCard(
+      icon: Icons.shopping_bag_outlined,
+      title: client.name,
+      subtitle: sale.description,
+      detail: _saleTypeLabel(sale.type),
+      total: sale.total,
+      paid: paid,
+      pending: pending,
+      progress: progress,
+      onPay: () => Navigator.pushNamed(
+        context,
+        PaymentFormScreen.routeName,
+        arguments: PaymentFormArguments(sale: sale),
+      ),
+    );
+  }
+}
+
+class _PendingCard extends StatelessWidget {
+  const _PendingCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.detail,
+    required this.total,
+    required this.paid,
+    required this.pending,
+    required this.progress,
+    required this.onPay,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String detail;
+  final double total;
+  final double paid;
+  final double pending;
+  final double progress;
+  final VoidCallback onPay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.verified_outlined, color: AppTheme.teal),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        client.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    Text(Formatters.money(service.price)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text('${event.type} - ${service.name}'),
-                Text(
-                  lastPayment == null
-                      ? 'Pagado completo'
-                      : 'Pagado el ${Formatters.date(lastPayment.paidAt)}',
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.receipt_long_outlined),
-                  label: Text(
-                    payments.length == 1
-                        ? 'Ver abono'
-                        : 'Ver ${payments.length} abonos',
+                Icon(icon),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  onPressed: () => _showPaymentHistory(context, event),
+                ),
+                Text(detail),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(subtitle),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0, 1),
+                minHeight: 8,
+                backgroundColor: AppTheme.line,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _AmountLabel(label: 'Total', amount: total),
+                ),
+                Expanded(
+                  child: _AmountLabel(label: 'Abonado', amount: paid),
+                ),
+                Expanded(
+                  child: _AmountLabel(
+                    label: 'Pendiente',
+                    amount: pending,
+                    highlight: true,
+                  ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              icon: const Icon(Icons.payments_outlined),
+              label: const Text('Abonar'),
+              onPressed: onPay,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaidEventCard extends StatelessWidget {
+  const _PaidEventCard({required this.event});
+
+  final PhotoEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = AppScope.of(context);
+    final client = viewModel.clientFor(event.clientId);
+    final service = viewModel.packageFor(event.packageId);
+    final payments = viewModel.paymentsForEvent(event.id);
+    final lastPayment = viewModel.lastPaymentForEvent(event.id);
+
+    return _PaidCard(
+      icon: Icons.event_available_outlined,
+      title: client.name,
+      subtitle: '${event.type} - ${service.name}',
+      amount: service.price,
+      paidAt: lastPayment?.paidAt,
+      payments: payments,
+    );
+  }
+}
+
+class _PaidSaleCard extends StatelessWidget {
+  const _PaidSaleCard({required this.sale});
+
+  final PhotoSale sale;
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = AppScope.of(context);
+    final client = viewModel.clientFor(sale.clientId);
+    final payments = viewModel.paymentsForSale(sale.id);
+    final lastPayment = viewModel.lastPaymentForSale(sale.id);
+
+    return _PaidCard(
+      icon: Icons.shopping_bag_outlined,
+      title: client.name,
+      subtitle: sale.description,
+      amount: sale.total,
+      paidAt: lastPayment?.paidAt,
+      payments: payments,
+    );
+  }
+}
+
+class _PaidCard extends StatelessWidget {
+  const _PaidCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.paidAt,
+    required this.payments,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final double amount;
+  final DateTime? paidAt;
+  final List<Payment> payments;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: AppTheme.teal),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                Text(Formatters.money(amount)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(subtitle),
+            Text(
+              paidAt == null
+                  ? 'Pagado completo'
+                  : 'Pagado el ${Formatters.date(paidAt!)}',
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: Text(
+                payments.length == 1
+                    ? 'Ver abono'
+                    : 'Ver ${payments.length} abonos',
+              ),
+              onPressed: () => _showPaymentHistory(context, payments),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showPaymentHistory(
     BuildContext context,
-    PhotoEvent event,
+    List<Payment> sourcePayments,
   ) async {
-    final viewModel = AppScope.of(context);
-    final client = viewModel.clientFor(event.clientId);
-    final service = viewModel.packageFor(event.packageId);
-    final payments = viewModel.paymentsForEvent(event.id)
+    final payments = [...sourcePayments]
       ..sort((left, right) => right.paidAt.compareTo(left.paidAt));
 
     await showModalBottomSheet<void>(
@@ -241,12 +410,9 @@ class _PaymentHistoryTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  client.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text(title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 4),
-                Text('${event.type} - ${service.name}'),
+                Text(subtitle),
                 const Divider(height: 24),
                 for (final payment in payments)
                   _PaymentHistoryRow(payment: payment),
@@ -260,16 +426,22 @@ class _PaymentHistoryTab extends StatelessWidget {
 }
 
 class _CollectionSummary extends StatelessWidget {
-  const _CollectionSummary({required this.events});
+  const _CollectionSummary({required this.events, required this.sales});
 
   final List<PhotoEvent> events;
+  final List<PhotoSale> sales;
 
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
-    final pendingTotal = events.fold<double>(0, (total, event) {
-      return total + viewModel.pendingForEvent(event.id);
-    });
+    final pendingTotal =
+        events.fold<double>(0, (total, event) {
+          return total + viewModel.pendingForEvent(event.id);
+        }) +
+        sales.fold<double>(0, (total, sale) {
+          return total + viewModel.pendingForSale(sale.id);
+        });
+    final count = events.length + sales.length;
 
     return Card(
       color: AppTheme.ink,
@@ -290,7 +462,7 @@ class _CollectionSummary extends StatelessWidget {
                     ).textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
                   Text(
-                    '${events.length} evento(s) por cobrar',
+                    '$count cuenta(s) por cobrar',
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -306,6 +478,17 @@ class _CollectionSummary extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(title, style: Theme.of(context).textTheme.titleLarge);
   }
 }
 
@@ -401,4 +584,17 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _saleTypeLabel(String value) {
+  return switch (value) {
+    'foto_individual' => 'Foto individual',
+    'impresion' => 'Impresion',
+    'edicion' => 'Edicion',
+    'retoque' => 'Retoque',
+    'sesion_rapida' => 'Sesion rapida',
+    'servicio' => 'Servicio suelto',
+    'otro' => 'Otro',
+    _ => value,
+  };
 }

@@ -10,6 +10,7 @@ import '../models/client.dart';
 import '../models/payment.dart';
 import '../models/photo_event.dart';
 import '../models/photo_package.dart';
+import '../models/photo_sale.dart';
 
 class FotogestRepository {
   FotogestRepository() : _firestore = null, _auth = null;
@@ -135,6 +136,33 @@ class FotogestRepository {
     ),
   ];
 
+  List<PhotoSale> _sales = [
+    PhotoSale(
+      id: 'ven_001',
+      clientId: 'cli_001',
+      userId: 'usr_001',
+      type: 'foto_individual',
+      description: 'Foto digital editada para perfil profesional',
+      quantity: 3,
+      unitPrice: 450,
+      soldAt: DateTime(2026, 7, 3, 10),
+      status: 'pendiente',
+      notes: 'Entrega por WhatsApp',
+    ),
+    PhotoSale(
+      id: 'ven_002',
+      clientId: 'cli_002',
+      userId: 'usr_001',
+      type: 'impresion',
+      description: 'Impresion 8x10 con retoque basico',
+      quantity: 2,
+      unitPrice: 650,
+      soldAt: DateTime(2026, 7, 4, 11, 30),
+      status: 'pendiente',
+      notes: 'Recoger en estudio',
+    ),
+  ];
+
   List<Payment> _payments = [
     Payment(
       id: 'pag_001',
@@ -169,6 +197,7 @@ class FotogestRepository {
   List<Client> getClients() => List.unmodifiable(_clients);
   List<PhotoEvent> getEvents() => List.unmodifiable(_events);
   List<PhotoPackage> getPackages() => List.unmodifiable(_packages);
+  List<PhotoSale> getSales() => List.unmodifiable(_sales);
   List<Payment> getPayments() => List.unmodifiable(_payments);
 
   Future<bool> signIn(String email, String password) async {
@@ -219,6 +248,7 @@ class FotogestRepository {
     _events = events.docs.map(_eventFromDoc).toList()..sort(_sortByEventDate);
     _payments = payments.docs.map(_paymentFromDoc).toList()
       ..sort(_sortByPaymentDate);
+    await _loadSalesIfAvailable(firestore);
 
     return true;
   }
@@ -465,6 +495,104 @@ class FotogestRepository {
     return deletedRemotely;
   }
 
+  Future<bool> addSale(PhotoSale sale) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('ventas').doc(sale.id).set({
+          'ventaId': sale.id,
+          'clienteId': sale.clientId,
+          'usuarioId': sale.userId,
+          'tipo': sale.type,
+          'descripcion': sale.description,
+          'cantidad': sale.quantity,
+          'precioUnitario': sale.unitPrice,
+          'total': sale.total,
+          'fechaVenta': Timestamp.fromDate(sale.soldAt),
+          'estado': sale.status,
+          'notas': sale.notes,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    _sales.removeWhere((savedSale) => savedSale.id == sale.id);
+    _sales = [sale, ..._sales]..sort(_sortBySaleDate);
+    return savedRemotely;
+  }
+
+  Future<bool> updateSale(PhotoSale sale) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('ventas').doc(sale.id).set({
+          'ventaId': sale.id,
+          'clienteId': sale.clientId,
+          'usuarioId': sale.userId,
+          'tipo': sale.type,
+          'descripcion': sale.description,
+          'cantidad': sale.quantity,
+          'precioUnitario': sale.unitPrice,
+          'total': sale.total,
+          'fechaVenta': Timestamp.fromDate(sale.soldAt),
+          'estado': sale.status,
+          'notas': sale.notes,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    final index = _sales.indexWhere((savedSale) {
+      return savedSale.id == sale.id;
+    });
+    if (index == -1) {
+      _sales = [sale, ..._sales]..sort(_sortBySaleDate);
+    } else {
+      _sales[index] = sale;
+      _sales.sort(_sortBySaleDate);
+    }
+    return savedRemotely;
+  }
+
+  Future<bool> deleteSale(String saleId) async {
+    var deletedRemotely = false;
+    final firestore = _firestore;
+    final paymentIds = _payments
+        .where((payment) => payment.saleId == saleId)
+        .map((payment) => payment.id)
+        .toList();
+
+    if (firestore != null) {
+      try {
+        final batch = firestore.batch();
+        batch.delete(firestore.collection('ventas').doc(saleId));
+        for (final paymentId in paymentIds) {
+          batch.delete(firestore.collection('pagos').doc(paymentId));
+        }
+        await batch.commit();
+        deletedRemotely = true;
+      } on FirebaseException {
+        deletedRemotely = false;
+      }
+    }
+
+    _sales = _sales.where((sale) => sale.id != saleId).toList(growable: true);
+    _payments = _payments
+        .where((payment) => payment.saleId != saleId)
+        .toList(growable: true);
+    return deletedRemotely;
+  }
+
   Future<bool> addPayment(Payment payment) async {
     var savedRemotely = false;
     final firestore = _firestore;
@@ -474,6 +602,7 @@ class FotogestRepository {
         await firestore.collection('pagos').doc(payment.id).set({
           'pagoId': payment.id,
           'eventoId': payment.eventId,
+          'ventaId': payment.saleId,
           'monto': payment.amount,
           'metodo': payment.method,
           'fechaPago': Timestamp.fromDate(payment.paidAt),
@@ -500,6 +629,7 @@ class FotogestRepository {
         await firestore.collection('pagos').doc(payment.id).set({
           'pagoId': payment.id,
           'eventoId': payment.eventId,
+          'ventaId': payment.saleId,
           'monto': payment.amount,
           'metodo': payment.method,
           'fechaPago': Timestamp.fromDate(payment.paidAt),
@@ -603,11 +733,39 @@ class FotogestRepository {
     return Payment(
       id: _text(data, 'pagoId', doc.id),
       eventId: _text(data, 'eventoId'),
+      saleId: _text(data, 'ventaId'),
       amount: _number(data, 'monto'),
       method: _text(data, 'metodo'),
       paidAt: _date(data, 'fechaPago'),
       note: _text(data, 'nota'),
     );
+  }
+
+  static PhotoSale _saleFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    return PhotoSale(
+      id: _text(data, 'ventaId', doc.id),
+      clientId: _text(data, 'clienteId'),
+      userId: _text(data, 'usuarioId', 'usr_001'),
+      type: _text(data, 'tipo', 'foto_individual'),
+      description: _text(data, 'descripcion'),
+      quantity: _int(data, 'cantidad', 1),
+      unitPrice: _number(data, 'precioUnitario'),
+      soldAt: _date(data, 'fechaVenta'),
+      status: _text(data, 'estado', 'pendiente'),
+      notes: _text(data, 'notas'),
+    );
+  }
+
+  Future<void> _loadSalesIfAvailable(FirebaseFirestore firestore) async {
+    try {
+      final sales = await firestore.collection('ventas').get();
+      _sales = sales.docs.map(_saleFromDoc).toList()..sort(_sortBySaleDate);
+    } on FirebaseException {
+      return;
+    }
   }
 
   static Future<void> _cacheSuccessfulCredentials(
@@ -675,6 +833,14 @@ class FotogestRepository {
     return 0;
   }
 
+  static int _int(Map<String, dynamic> data, String key, [int fallback = 0]) {
+    final value = data[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
   static DateTime _date(Map<String, dynamic> data, String key) {
     final value = data[key];
     if (value is Timestamp) return value.toDate();
@@ -700,5 +866,9 @@ class FotogestRepository {
 
   static int _sortByPaymentDate(Payment left, Payment right) {
     return left.paidAt.compareTo(right.paidAt);
+  }
+
+  static int _sortBySaleDate(PhotoSale left, PhotoSale right) {
+    return right.soldAt.compareTo(left.soldAt);
   }
 }

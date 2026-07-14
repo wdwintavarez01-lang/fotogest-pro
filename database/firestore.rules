@@ -24,6 +24,10 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    match /ventas/{ventaId} {
+      allow read, write: if signedIn();
+    }
+
     match /pagos/{pagoId} {
       allow read, write: if signedIn();
     }

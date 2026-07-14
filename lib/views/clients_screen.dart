@@ -148,11 +148,12 @@ class ClientsScreen extends StatelessWidget {
   Future<void> _confirmDelete(BuildContext context, Client client) async {
     final viewModel = AppScope.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    if (viewModel.hasEventsForClient(client.id)) {
+    if (viewModel.hasEventsForClient(client.id) ||
+        viewModel.hasSalesForClient(client.id)) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
-            'No puedes eliminar un cliente con eventos registrados.',
+            'No puedes eliminar un cliente con eventos o ventas registradas.',
           ),
         ),
       );

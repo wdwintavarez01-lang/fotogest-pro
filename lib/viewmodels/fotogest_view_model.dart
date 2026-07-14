@@ -4,6 +4,7 @@ import '../models/client.dart';
 import '../models/payment.dart';
 import '../models/photo_event.dart';
 import '../models/photo_package.dart';
+import '../models/photo_sale.dart';
 import '../repositories/fotogest_repository.dart';
 
 class FotogestViewModel extends ChangeNotifier {
@@ -18,6 +19,7 @@ class FotogestViewModel extends ChangeNotifier {
   List<Client> get clients => _repository.getClients();
   List<PhotoEvent> get events => _repository.getEvents();
   List<PhotoPackage> get packages => _repository.getPackages();
+  List<PhotoSale> get sales => _repository.getSales();
   List<Payment> get payments => _repository.getPayments();
 
   String get connectionLabel {
@@ -46,6 +48,11 @@ class FotogestViewModel extends ChangeNotifier {
         event.id,
       ).fold<double>(0, (sum, payment) => sum + payment.amount);
       total += (package.price - paid).clamp(0, package.price).toDouble();
+    }
+    for (final sale in sales) {
+      if (sale.status == 'cancelado') continue;
+      final paid = paidForSale(sale.id);
+      total += (sale.total - paid).clamp(0, sale.total).toDouble();
     }
     return total;
   }
@@ -92,8 +99,29 @@ class FotogestViewModel extends ChangeNotifier {
     );
   }
 
+  PhotoSale saleFor(String id) {
+    return sales.firstWhere(
+      (sale) => sale.id == id,
+      orElse: () => PhotoSale(
+        id: id,
+        clientId: '',
+        userId: 'usr_001',
+        type: 'otro',
+        description: 'Venta no encontrada',
+        quantity: 1,
+        unitPrice: 0,
+        soldAt: DateTime.now(),
+        status: 'pendiente',
+      ),
+    );
+  }
+
   List<Payment> paymentsForEvent(String eventId) {
     return payments.where((payment) => payment.eventId == eventId).toList();
+  }
+
+  List<Payment> paymentsForSale(String saleId) {
+    return payments.where((payment) => payment.saleId == saleId).toList();
   }
 
   List<PhotoEvent> get pendingPaymentEvents {
@@ -125,8 +153,42 @@ class FotogestViewModel extends ChangeNotifier {
     return paid;
   }
 
+  List<PhotoSale> get pendingSales {
+    final pending = sales.where((sale) {
+      return sale.status != 'cancelado' && pendingForSale(sale.id) > 0;
+    }).toList();
+    pending.sort((left, right) {
+      final pendingCompare = pendingForSale(
+        right.id,
+      ).compareTo(pendingForSale(left.id));
+      if (pendingCompare != 0) return pendingCompare;
+      return right.soldAt.compareTo(left.soldAt);
+    });
+    return pending;
+  }
+
+  List<PhotoSale> get paidSales {
+    final paid = sales.where((sale) {
+      return sale.status != 'cancelado' &&
+          sale.total > 0 &&
+          pendingForSale(sale.id) <= 0;
+    }).toList();
+    paid.sort((left, right) {
+      final rightDate = lastPaymentForSale(right.id)?.paidAt ?? right.soldAt;
+      final leftDate = lastPaymentForSale(left.id)?.paidAt ?? left.soldAt;
+      return rightDate.compareTo(leftDate);
+    });
+    return paid;
+  }
+
   double paidForEvent(String eventId) {
     return paymentsForEvent(eventId).fold(0, (sum, payment) {
+      return sum + payment.amount;
+    });
+  }
+
+  double paidForSale(String saleId) {
+    return paymentsForSale(saleId).fold(0, (sum, payment) {
       return sum + payment.amount;
     });
   }
@@ -139,6 +201,13 @@ class FotogestViewModel extends ChangeNotifier {
     return (package.price - paid).clamp(0, package.price).toDouble();
   }
 
+  double pendingForSale(String saleId) {
+    final sale = saleFor(saleId);
+    if (sale.status == 'cancelado') return 0;
+    final paid = paidForSale(saleId);
+    return (sale.total - paid).clamp(0, sale.total).toDouble();
+  }
+
   Payment? lastPaymentForEvent(String eventId) {
     final eventPayments = paymentsForEvent(eventId);
     if (eventPayments.isEmpty) return null;
@@ -146,8 +215,19 @@ class FotogestViewModel extends ChangeNotifier {
     return eventPayments.first;
   }
 
+  Payment? lastPaymentForSale(String saleId) {
+    final salePayments = paymentsForSale(saleId);
+    if (salePayments.isEmpty) return null;
+    salePayments.sort((left, right) => right.paidAt.compareTo(left.paidAt));
+    return salePayments.first;
+  }
+
   bool hasEventsForClient(String clientId) {
     return events.any((event) => event.clientId == clientId);
+  }
+
+  bool hasSalesForClient(String clientId) {
+    return sales.any((sale) => sale.clientId == clientId);
   }
 
   bool hasEventsForPackage(String packageId) {
@@ -342,8 +422,71 @@ class FotogestViewModel extends ChangeNotifier {
     return deletedRemotely;
   }
 
+  Future<bool> addSale({
+    required String clientId,
+    required String type,
+    required String description,
+    required int quantity,
+    required double unitPrice,
+    required DateTime soldAt,
+    required String status,
+    String notes = '',
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final savedRemotely = await _repository.addSale(
+      PhotoSale(
+        id: 'ven_$timestamp',
+        clientId: clientId,
+        userId: 'usr_001',
+        type: type,
+        description: description.trim(),
+        quantity: quantity,
+        unitPrice: unitPrice,
+        soldAt: soldAt,
+        status: status,
+        notes: notes.trim(),
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> updateSale({
+    required PhotoSale sale,
+    required String clientId,
+    required String type,
+    required String description,
+    required int quantity,
+    required double unitPrice,
+    required DateTime soldAt,
+    required String status,
+    String notes = '',
+  }) async {
+    final savedRemotely = await _repository.updateSale(
+      sale.copyWith(
+        clientId: clientId,
+        type: type,
+        description: description.trim(),
+        quantity: quantity,
+        unitPrice: unitPrice,
+        soldAt: soldAt,
+        status: status,
+        notes: notes.trim(),
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> deleteSale(String saleId) async {
+    final deletedRemotely = await _repository.deleteSale(saleId);
+    notifyListeners();
+    return deletedRemotely;
+  }
+
   Future<bool> addPayment({
-    required String eventId,
+    String eventId = '',
+    String saleId = '',
     required double amount,
     required String method,
     required DateTime paidAt,
@@ -354,6 +497,7 @@ class FotogestViewModel extends ChangeNotifier {
       Payment(
         id: 'pag_$timestamp',
         eventId: eventId,
+        saleId: saleId,
         amount: amount,
         method: method,
         paidAt: paidAt,
@@ -366,7 +510,8 @@ class FotogestViewModel extends ChangeNotifier {
 
   Future<bool> updatePayment({
     required Payment payment,
-    required String eventId,
+    String eventId = '',
+    String saleId = '',
     required double amount,
     required String method,
     required DateTime paidAt,
@@ -375,6 +520,7 @@ class FotogestViewModel extends ChangeNotifier {
     final savedRemotely = await _repository.updatePayment(
       payment.copyWith(
         eventId: eventId,
+        saleId: saleId,
         amount: amount,
         method: method,
         paidAt: paidAt,

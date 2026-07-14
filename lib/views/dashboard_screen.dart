@@ -10,6 +10,7 @@ import 'clients_screen.dart';
 import 'events_screen.dart';
 import 'packages_screen.dart';
 import 'payments_screen.dart';
+import 'sales_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -140,10 +141,40 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    icon: const Icon(Icons.payments_outlined),
-                    label: const Text('Cobrar'),
+                    icon: const Icon(Icons.shopping_bag_outlined),
+                    label: const Text('Ventas'),
                     onPressed: () =>
-                        Navigator.pushNamed(context, PaymentsScreen.routeName),
+                        Navigator.pushNamed(context, SalesScreen.routeName),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.payments_outlined),
+              label: const Text('Cobros y pagos'),
+              onPressed: () =>
+                  Navigator.pushNamed(context, PaymentsScreen.routeName),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: MetricTile(
+                    icon: Icons.shopping_bag_outlined,
+                    label: 'Ventas abiertas',
+                    value: '${viewModel.pendingSales.length}',
+                    color: AppTheme.ocean,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: MetricTile(
+                    icon: Icons.payments_outlined,
+                    label: 'Cuentas por cobrar',
+                    value:
+                        '${viewModel.pendingPaymentEvents.length + viewModel.pendingSales.length}',
+                    color: AppTheme.coral,
                   ),
                 ),
               ],

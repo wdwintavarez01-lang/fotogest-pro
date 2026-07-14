@@ -2,21 +2,21 @@
 
 Este paquete corresponde al proyecto practico final de Seminario de Proyecto II
 (ISW-411). La aplicacion implementa un flujo movil para fotografos de eventos,
-con autenticacion, consulta de dashboard, gestion de clientes, eventos, pagos y
-servicios fotograficos.
+con autenticacion, consulta de dashboard, gestion de clientes, eventos, ventas,
+pagos y servicios fotograficos.
 
 ## Estado de la app
 
 - Framework: Flutter / Dart.
 - Backend: Firebase Authentication + Cloud Firestore.
 - Arquitectura: MVVM con modelos, repositorio, servicios, vistas y widgets.
-- Funcionalidad central: gestion de clientes, servicios, eventos, abonos e
-  historial de eventos pagados.
+- Funcionalidad central: gestion de clientes, servicios, eventos, ventas
+  independientes, abonos e historial de cuentas pagadas.
 - Persistencia: Cloud Firestore con respaldo local y acceso offline con
   credenciales guardadas.
-- Pantallas: Login, Dashboard, Clientes, Formulario de cliente, Eventos, Pagos
-  y Servicios.
-- Validaciones: correo, contrasena, nombre, telefono, precios, eventos y pagos.
+- Pantallas: Login, Dashboard, Clientes, Eventos, Ventas, Pagos y Servicios.
+- Validaciones: correo, contrasena, nombre, telefono, precios, eventos, ventas
+  y pagos.
 
 ## Flujo que debe probar el evaluador
 
@@ -29,10 +29,11 @@ servicios fotograficos.
 7. Editar el cliente.
 8. Crear o editar un servicio fotografico.
 9. Crear un evento asociado a cliente y servicio.
-10. Registrar un abono del evento.
-11. Revisar Pagos para confirmar que los eventos pendientes tienen prioridad.
-12. Completar el pago de un evento y confirmar que pasa al Historial.
-13. Revisar el Dashboard para confirmar abonado y pendiente.
+10. Crear una venta independiente de foto, impresion, retoque o servicio.
+11. Registrar un abono del evento o venta.
+12. Revisar Pagos para confirmar que las cuentas pendientes tienen prioridad.
+13. Completar el pago de una cuenta y confirmar que pasa al Historial.
+14. Revisar el Dashboard para confirmar abonado y pendiente.
 
 ## Archivos importantes
 
@@ -42,6 +43,7 @@ servicios fotograficos.
 - `lib/views/client_form_screen.dart`: formulario de creacion/edicion.
 - `lib/views/package_form_screen.dart`: formulario de servicios.
 - `lib/views/event_form_screen.dart`: formulario de eventos.
+- `lib/views/sale_form_screen.dart`: formulario de ventas independientes.
 - `lib/views/payment_form_screen.dart`: formulario de pagos.
 - `database/firestore_modelo_fotogest_pro.md`: modelo de datos.
 - `database/firestore.rules`: reglas base de Firestore.

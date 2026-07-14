@@ -1,7 +1,8 @@
 class Payment {
   const Payment({
     required this.id,
-    required this.eventId,
+    this.eventId = '',
+    this.saleId = '',
     required this.amount,
     required this.method,
     required this.paidAt,
@@ -10,6 +11,7 @@ class Payment {
 
   final String id;
   final String eventId;
+  final String saleId;
   final double amount;
   final String method;
   final DateTime paidAt;
@@ -18,6 +20,7 @@ class Payment {
   Payment copyWith({
     String? id,
     String? eventId,
+    String? saleId,
     double? amount,
     String? method,
     DateTime? paidAt,
@@ -26,6 +29,7 @@ class Payment {
     return Payment(
       id: id ?? this.id,
       eventId: eventId ?? this.eventId,
+      saleId: saleId ?? this.saleId,
       amount: amount ?? this.amount,
       method: method ?? this.method,
       paidAt: paidAt ?? this.paidAt,

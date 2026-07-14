@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/photo_package.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_scope.dart';
-import '../widgets/fotogest_bottom_nav.dart';
 import 'package_form_screen.dart';
 
 class PackagesScreen extends StatelessWidget {
@@ -17,9 +16,6 @@ class PackagesScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Servicios')),
-      bottomNavigationBar: const FotogestBottomNav(
-        currentRoute: PackagesScreen.routeName,
-      ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add_business_outlined),
         label: const Text('Nuevo'),
