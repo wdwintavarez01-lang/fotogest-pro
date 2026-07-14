@@ -47,6 +47,9 @@ class SalesScreen extends StatelessWidget {
                   final hasPayments = viewModel
                       .paymentsForSale(sale.id)
                       .isNotEmpty;
+                  final saleTitle = sale.description.trim().isEmpty
+                      ? _saleTypeLabel(sale.type)
+                      : sale.description;
 
                   return Card(
                     child: Padding(
@@ -73,7 +76,7 @@ class SalesScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(_saleTypeLabel(sale.type)),
-                          Text(sale.description),
+                          Text(saleTitle),
                           const SizedBox(height: 8),
                           Text(
                             '${sale.quantity} x ${Formatters.money(sale.unitPrice)}',

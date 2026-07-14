@@ -7,6 +7,13 @@ import '../models/photo_package.dart';
 import '../models/photo_sale.dart';
 import '../repositories/fotogest_repository.dart';
 
+class SaleSaveResult {
+  const SaleSaveResult({required this.sale, required this.savedRemotely});
+
+  final PhotoSale sale;
+  final bool savedRemotely;
+}
+
 class FotogestViewModel extends ChangeNotifier {
   FotogestViewModel(this._repository);
 
@@ -422,7 +429,7 @@ class FotogestViewModel extends ChangeNotifier {
     return deletedRemotely;
   }
 
-  Future<bool> addSale({
+  Future<SaleSaveResult> addSale({
     required String clientId,
     required String type,
     required String description,
@@ -433,25 +440,24 @@ class FotogestViewModel extends ChangeNotifier {
     String notes = '',
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final savedRemotely = await _repository.addSale(
-      PhotoSale(
-        id: 'ven_$timestamp',
-        clientId: clientId,
-        userId: 'usr_001',
-        type: type,
-        description: description.trim(),
-        quantity: quantity,
-        unitPrice: unitPrice,
-        soldAt: soldAt,
-        status: status,
-        notes: notes.trim(),
-      ),
+    final sale = PhotoSale(
+      id: 'ven_$timestamp',
+      clientId: clientId,
+      userId: 'usr_001',
+      type: type,
+      description: description.trim(),
+      quantity: quantity,
+      unitPrice: unitPrice,
+      soldAt: soldAt,
+      status: status,
+      notes: notes.trim(),
     );
+    final savedRemotely = await _repository.addSale(sale);
     notifyListeners();
-    return savedRemotely;
+    return SaleSaveResult(sale: sale, savedRemotely: savedRemotely);
   }
 
-  Future<bool> updateSale({
+  Future<SaleSaveResult> updateSale({
     required PhotoSale sale,
     required String clientId,
     required String type,
@@ -462,20 +468,19 @@ class FotogestViewModel extends ChangeNotifier {
     required String status,
     String notes = '',
   }) async {
-    final savedRemotely = await _repository.updateSale(
-      sale.copyWith(
-        clientId: clientId,
-        type: type,
-        description: description.trim(),
-        quantity: quantity,
-        unitPrice: unitPrice,
-        soldAt: soldAt,
-        status: status,
-        notes: notes.trim(),
-      ),
+    final updatedSale = sale.copyWith(
+      clientId: clientId,
+      type: type,
+      description: description.trim(),
+      quantity: quantity,
+      unitPrice: unitPrice,
+      soldAt: soldAt,
+      status: status,
+      notes: notes.trim(),
     );
+    final savedRemotely = await _repository.updateSale(updatedSale);
     notifyListeners();
-    return savedRemotely;
+    return SaleSaveResult(sale: updatedSale, savedRemotely: savedRemotely);
   }
 
   Future<bool> deleteSale(String saleId) async {

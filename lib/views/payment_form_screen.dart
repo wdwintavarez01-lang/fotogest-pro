@@ -57,7 +57,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
         _PaymentTarget.sale(
           sale: sale,
           clientName: viewModel.clientFor(sale.clientId).name,
-          description: sale.description,
+          description: _saleTitle(sale),
           pending: viewModel.pendingForSale(sale.id),
         ),
     ];
@@ -123,7 +123,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                           },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Selecciona un evento';
+                              return 'Selecciona una cuenta';
                             }
                             return null;
                           },
@@ -227,18 +227,19 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                   setState(() {
                                     isSaving = true;
                                   });
+                                  final amount = _parseAmount(
+                                    amountController.text,
+                                  )!;
                                   final savedRemotely = await viewModel
                                       .addPayment(
                                         eventId: selectedTarget!.eventId,
                                         saleId: selectedTarget.saleId,
-                                        amount: _parseAmount(
-                                          amountController.text,
-                                        )!,
+                                        amount: amount,
                                         method: method,
                                         paidAt: paidAt,
                                         note: noteController.text,
                                       );
-                                  if (!mounted) return;
+                                  if (!context.mounted) return;
                                   setState(() {
                                     isSaving = false;
                                   });
@@ -251,6 +252,13 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                       ),
                                     ),
                                   );
+                                  await _showReceipt(
+                                    context: context,
+                                    target: selectedTarget,
+                                    amount: amount,
+                                    savedRemotely: savedRemotely,
+                                  );
+                                  if (!mounted) return;
                                   navigator.pop();
                                 },
                         ),
@@ -297,11 +305,73 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     return null;
   }
 
+  Future<void> _showReceipt({
+    required BuildContext context,
+    required _PaymentTarget target,
+    required double amount,
+    required bool savedRemotely,
+  }) async {
+    final remaining = (target.pending - amount).clamp(0, target.pending);
+    final receiptNumber = DateTime.now().millisecondsSinceEpoch
+        .toString()
+        .substring(6);
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recibo de muestra'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Recibo: FGP-$receiptNumber'),
+              const SizedBox(height: 8),
+              Text('Cuenta: ${target.title}'),
+              Text('Concepto: ${target.subtitle}'),
+              Text('Fecha: ${Formatters.date(paidAt)}'),
+              Text('Metodo: ${_methodLabel(method)}'),
+              const Divider(height: 22),
+              Text('Abono: ${Formatters.money(amount)}'),
+              Text('Saldo restante: ${Formatters.money(remaining.toDouble())}'),
+              const SizedBox(height: 8),
+              Text(savedRemotely ? 'Estado: Online' : 'Estado: Local'),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _methodLabel(String value) {
     return switch (value) {
       'efectivo' => 'Efectivo',
       'transferencia' => 'Transferencia',
       'tarjeta' => 'Tarjeta',
+      'otro' => 'Otro',
+      _ => value,
+    };
+  }
+
+  String _saleTitle(PhotoSale sale) {
+    if (sale.description.trim().isNotEmpty) return sale.description;
+    return _saleTypeLabel(sale.type);
+  }
+
+  String _saleTypeLabel(String value) {
+    return switch (value) {
+      'foto_individual' => 'Foto individual',
+      'impresion' => 'Impresion',
+      'edicion' => 'Edicion',
+      'retoque' => 'Retoque',
+      'sesion_rapida' => 'Sesion rapida',
+      'servicio' => 'Servicio suelto',
       'otro' => 'Otro',
       _ => value,
     };

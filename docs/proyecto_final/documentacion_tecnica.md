@@ -64,7 +64,10 @@ eventos y ventas:
 - Crear, editar y eliminar servicios fotograficos.
 - Crear, editar y eliminar eventos asociados a cliente y servicio.
 - Crear, editar y eliminar ventas independientes sin evento.
+- Calcular total de venta automaticamente desde cantidad y precio unitario.
+- Guardar una venta y abrir el cobro inmediato.
 - Registrar abonos para eventos o ventas pendientes.
+- Mostrar recibo de muestra al registrar un abono.
 - Consultar historial de cuentas pagadas.
 
 ## Validaciones
@@ -75,7 +78,8 @@ eventos y ventas:
 - El telefono es obligatorio y debe contener al menos 10 digitos.
 - Los precios y montos deben ser mayores que cero.
 - Los abonos no pueden superar el saldo pendiente.
-- Una venta debe tener cliente, descripcion, cantidad y precio unitario.
+- Una venta debe tener cliente, cantidad y precio unitario. La descripcion es
+  opcional.
 
 ## Decisiones de diseno
 

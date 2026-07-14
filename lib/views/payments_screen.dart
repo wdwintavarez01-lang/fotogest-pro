@@ -183,7 +183,7 @@ class _PendingSaleCard extends StatelessWidget {
     return _PendingCard(
       icon: Icons.shopping_bag_outlined,
       title: client.name,
-      subtitle: sale.description,
+      subtitle: _saleTitle(sale),
       detail: _saleTypeLabel(sale.type),
       total: sale.total,
       paid: paid,
@@ -323,7 +323,7 @@ class _PaidSaleCard extends StatelessWidget {
     return _PaidCard(
       icon: Icons.shopping_bag_outlined,
       title: client.name,
-      subtitle: sale.description,
+      subtitle: _saleTitle(sale),
       amount: sale.total,
       paidAt: lastPayment?.paidAt,
       payments: payments,
@@ -597,4 +597,9 @@ String _saleTypeLabel(String value) {
     'otro' => 'Otro',
     _ => value,
   };
+}
+
+String _saleTitle(PhotoSale sale) {
+  if (sale.description.trim().isNotEmpty) return sale.description;
+  return _saleTypeLabel(sale.type);
 }

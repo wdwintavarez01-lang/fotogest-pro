@@ -16,11 +16,15 @@
 | 12 | Crear evento | Ir a Eventos, presionar Nuevo y seleccionar cliente, servicio, fecha y ubicacion. | El evento aparece en la agenda y en el Dashboard. | Aprobado |
 | 13 | Editar evento | Abrir un evento y cambiar estado o datos principales. | La agenda muestra los datos actualizados. | Aprobado |
 | 14 | Crear venta independiente | Ir a Ventas, presionar Nueva y guardar una foto individual o servicio suelto. | La venta aparece en la lista y queda disponible para cobrar. | Aprobado |
-| 15 | Registrar abono | Desde Eventos, Ventas o Pagos registrar un monto para una cuenta pendiente. | El abono reduce el saldo pendiente. | Aprobado |
-| 16 | Validar monto de pago | Registrar un pago mayor al saldo pendiente. | El formulario bloquea el monto y muestra mensaje. | Aprobado |
-| 17 | Historial de pagos | Completar el pago total de un evento o venta. | La cuenta sale de Pendientes y aparece en Historial. | Aprobado |
-| 18 | Consultar abonos | Abrir el Historial y ver el detalle de abonos. | La app muestra los abonos sin botones de editar o eliminar. | Aprobado |
-| 19 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
+| 15 | Calcular total de venta | Cambiar cantidad y precio unitario en Nueva venta. | La app muestra el total calculado automaticamente. | Aprobado |
+| 16 | Descripcion opcional | Guardar una venta sin descripcion. | La app guarda la venta usando el tipo como referencia visible. | Aprobado |
+| 17 | Guardar y cobrar venta | Presionar Guardar y cobrar ahora. | La app guarda la venta y abre el formulario de abono. | Aprobado |
+| 18 | Registrar abono | Desde Eventos, Ventas o Pagos registrar un monto para una cuenta pendiente. | El abono reduce el saldo pendiente. | Aprobado |
+| 19 | Recibo de muestra | Guardar un abono valido. | La app muestra un recibo de muestra con monto, metodo, fecha y saldo. | Aprobado |
+| 20 | Validar monto de pago | Registrar un pago mayor al saldo pendiente. | El formulario bloquea el monto y muestra mensaje. | Aprobado |
+| 21 | Historial de pagos | Completar el pago total de un evento o venta. | La cuenta sale de Pendientes y aparece en Historial. | Aprobado |
+| 22 | Consultar abonos | Abrir el Historial y ver el detalle de abonos. | La app muestra los abonos sin botones de editar o eliminar. | Aprobado |
+| 23 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
 
 ## Errores corregidos
 
@@ -33,3 +37,4 @@
 - Se agrego acceso offline usando credenciales previamente validadas.
 - Se rediseno Pagos como cobros pendientes e historial de cuentas pagadas.
 - Se agrego Ventas para fotos individuales, impresiones, retoques y servicios independientes de eventos.
+- Se agrego total automatico en ventas, descripcion opcional, cobro inmediato y recibo de muestra.

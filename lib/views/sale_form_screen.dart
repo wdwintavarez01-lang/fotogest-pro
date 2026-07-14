@@ -4,6 +4,7 @@ import '../models/photo_sale.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_scope.dart';
 import 'client_form_screen.dart';
+import 'payment_form_screen.dart';
 
 class SaleFormScreen extends StatefulWidget {
   const SaleFormScreen({super.key});
@@ -27,6 +28,7 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
   DateTime soldAt = DateTime.now();
   bool didLoadArguments = false;
   bool isSaving = false;
+  bool isSavingAndPaying = false;
 
   static const saleTypes = [
     'foto_individual',
@@ -75,6 +77,7 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
     }
 
     final isEditing = sale != null;
+    final total = _currentTotal();
 
     return Scaffold(
       appBar: AppBar(title: Text(isEditing ? 'Editar venta' : 'Nueva venta')),
@@ -139,17 +142,10 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                         TextFormField(
                           controller: descriptionController,
                           decoration: const InputDecoration(
-                            labelText: 'Descripcion',
+                            labelText: 'Descripcion (opcional)',
                             prefixIcon: Icon(Icons.notes_outlined),
                           ),
                           maxLines: 3,
-                          validator: (value) {
-                            final description = value?.trim() ?? '';
-                            if (description.isEmpty) {
-                              return 'La descripcion es obligatoria';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -162,6 +158,7 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                                   prefixIcon: Icon(Icons.numbers_outlined),
                                 ),
                                 keyboardType: TextInputType.number,
+                                onChanged: (_) => setState(() {}),
                                 validator: (value) {
                                   final quantity = _parseQuantity(value ?? '');
                                   if (quantity == null || quantity <= 0) {
@@ -180,6 +177,7 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                                   prefixIcon: Icon(Icons.attach_money),
                                 ),
                                 keyboardType: TextInputType.number,
+                                onChanged: (_) => setState(() {}),
                                 validator: (value) {
                                   final price = _parseMoney(value ?? '');
                                   if (price == null || price <= 0) {
@@ -190,6 +188,18 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.calculate_outlined),
+                            title: const Text('Total de la venta'),
+                            subtitle: const Text('Cantidad x precio unitario'),
+                            trailing: Text(
+                              Formatters.money(total),
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Card(
@@ -233,7 +243,7 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                         ),
                         const SizedBox(height: 20),
                         FilledButton.icon(
-                          icon: isSaving
+                          icon: isSaving || isSavingAndPaying
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
@@ -249,66 +259,32 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
                                 ? 'Actualizar venta'
                                 : 'Guardar venta',
                           ),
-                          onPressed: isSaving
+                          onPressed: isSaving || isSavingAndPaying
                               ? null
-                              : () async {
-                                  if (!formKey.currentState!.validate()) {
-                                    return;
-                                  }
-                                  final messenger = ScaffoldMessenger.of(
-                                    context,
-                                  );
-                                  final navigator = Navigator.of(context);
-                                  setState(() {
-                                    isSaving = true;
-                                  });
-                                  final savedRemotely = isEditing
-                                      ? await viewModel.updateSale(
-                                          sale: sale!,
-                                          clientId: selectedClientId!,
-                                          type: type,
-                                          description:
-                                              descriptionController.text,
-                                          quantity: _parseQuantity(
-                                            quantityController.text,
-                                          )!,
-                                          unitPrice: _parseMoney(
-                                            unitPriceController.text,
-                                          )!,
-                                          soldAt: soldAt,
-                                          status: status,
-                                          notes: notesController.text,
-                                        )
-                                      : await viewModel.addSale(
-                                          clientId: selectedClientId!,
-                                          type: type,
-                                          description:
-                                              descriptionController.text,
-                                          quantity: _parseQuantity(
-                                            quantityController.text,
-                                          )!,
-                                          unitPrice: _parseMoney(
-                                            unitPriceController.text,
-                                          )!,
-                                          soldAt: soldAt,
-                                          status: status,
-                                          notes: notesController.text,
-                                        );
-                                  if (!mounted) return;
-                                  setState(() {
-                                    isSaving = false;
-                                  });
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        savedRemotely
-                                            ? 'Venta guardada Online'
-                                            : 'Venta guardada en modo local',
-                                      ),
-                                    ),
-                                  );
-                                  navigator.pop();
-                                },
+                              : () => _saveSale(payNow: false),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          icon: isSavingAndPaying
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.payments_outlined),
+                          label: Text(
+                            isSavingAndPaying
+                                ? 'Abriendo cobro...'
+                                : 'Guardar y cobrar ahora',
+                          ),
+                          onPressed:
+                              isSaving ||
+                                  isSavingAndPaying ||
+                                  status == 'cancelado'
+                              ? null
+                              : () => _saveSale(payNow: true),
                         ),
                         const SizedBox(height: 10),
                         OutlinedButton.icon(
@@ -323,6 +299,73 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
               ),
       ),
     );
+  }
+
+  Future<void> _saveSale({required bool payNow}) async {
+    if (!formKey.currentState!.validate()) return;
+
+    final viewModel = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final isEditing = sale != null;
+
+    setState(() {
+      if (payNow) {
+        isSavingAndPaying = true;
+      } else {
+        isSaving = true;
+      }
+    });
+
+    final result = isEditing
+        ? await viewModel.updateSale(
+            sale: sale!,
+            clientId: selectedClientId!,
+            type: type,
+            description: descriptionController.text,
+            quantity: _parseQuantity(quantityController.text)!,
+            unitPrice: _parseMoney(unitPriceController.text)!,
+            soldAt: soldAt,
+            status: status,
+            notes: notesController.text,
+          )
+        : await viewModel.addSale(
+            clientId: selectedClientId!,
+            type: type,
+            description: descriptionController.text,
+            quantity: _parseQuantity(quantityController.text)!,
+            unitPrice: _parseMoney(unitPriceController.text)!,
+            soldAt: soldAt,
+            status: status,
+            notes: notesController.text,
+          );
+
+    if (!mounted) return;
+
+    setState(() {
+      isSaving = false;
+      isSavingAndPaying = false;
+    });
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          result.savedRemotely
+              ? 'Venta guardada Online'
+              : 'Venta guardada en modo local',
+        ),
+      ),
+    );
+
+    if (payNow) {
+      navigator.pushReplacementNamed(
+        PaymentFormScreen.routeName,
+        arguments: PaymentFormArguments(sale: result.sale),
+      );
+      return;
+    }
+
+    navigator.pop();
   }
 
   Future<void> _pickDate() async {
@@ -343,6 +386,12 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
   double? _parseMoney(String value) {
     final normalized = value.replaceAll('RD\$', '').replaceAll(',', '').trim();
     return double.tryParse(normalized);
+  }
+
+  double _currentTotal() {
+    final quantity = _parseQuantity(quantityController.text) ?? 0;
+    final unitPrice = _parseMoney(unitPriceController.text) ?? 0;
+    return quantity * unitPrice;
   }
 
   String _saleTypeLabel(String value) {

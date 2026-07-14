@@ -53,7 +53,11 @@ Flujo funcional principal:
 - Crear, consultar, editar y eliminar eventos asociados a cliente y servicio.
 - Crear ventas independientes para fotos sueltas, impresiones, retoques o
   servicios sin crear evento.
+- Calcular automaticamente el total de una venta desde cantidad y precio
+  unitario.
+- Guardar una venta y cobrarla inmediatamente desde el mismo flujo.
 - Registrar abonos asociados a eventos o ventas pendientes.
+- Mostrar un recibo de muestra al registrar un abono.
 - Priorizar cobros pendientes y mover cuentas pagadas al historial.
 - Calcular abonado y pendiente desde los abonos registrados.
 - Entrar en modo offline usando credenciales guardadas previamente.

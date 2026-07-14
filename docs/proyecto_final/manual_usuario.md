@@ -28,13 +28,8 @@ servicios, ventas independientes y pagos desde una aplicacion movil.
 
 ## Dashboard
 
-El Dashboard muestra un resumen del negocio:
-
-- Cantidad de clientes.
-- Eventos activos.
-- Monto abonado.
-- Monto pendiente.
-- Proximos eventos.
+El Dashboard muestra cantidad de clientes, eventos activos, monto abonado,
+monto pendiente, proximos eventos, ventas abiertas y cuentas por cobrar.
 
 ## Gestion de clientes
 
@@ -43,31 +38,15 @@ El Dashboard muestra un resumen del negocio:
 3. Completar nombre, telefono y notas.
 4. Presionar **Guardar cliente**.
 5. Tocar un cliente de la lista para ver su detalle.
-6. Desde el detalle se puede editar o eliminar.
+6. Desde el detalle se puede editar o eliminar si no tiene eventos ni ventas.
 
 ## Eventos
 
 La pantalla **Eventos** muestra los eventos registrados, el cliente asociado,
 la fecha, ubicacion, servicio contratado, monto abonado y monto pendiente.
 
-Desde esta pantalla se puede:
-
-- Crear un evento nuevo.
-- Editar un evento existente.
-- Eliminar un evento.
-- Registrar un cobro directo desde un evento pendiente.
-
-## Pagos
-
-La pantalla **Pagos** se organiza en dos pestañas:
-
-- **Pendientes**: muestra primero los eventos que todavia tienen saldo por
-  cobrar y tambien las ventas independientes pendientes.
-- **Historial**: muestra los eventos y ventas que ya fueron pagados por completo
-  y permite consultar sus abonos sin editar ni eliminar pagos directamente.
-
-Cuando el saldo pendiente de un evento o venta llega a cero, deja de aparecer en
-Pendientes y pasa automaticamente al Historial.
+Desde esta pantalla se puede crear, editar, eliminar y cobrar eventos
+pendientes.
 
 ## Ventas
 
@@ -82,35 +61,48 @@ por ejemplo:
 - Servicio suelto.
 
 Cada venta se asocia a un cliente, tiene cantidad, precio unitario, total,
-abonos y saldo pendiente.
+abonos y saldo pendiente. La descripcion es opcional; si no se escribe, la app
+usa el tipo de venta como referencia. El total se calcula automaticamente al
+modificar la cantidad o el precio unitario.
+
+Al crear una venta se puede elegir:
+
+- **Guardar venta**: registra la venta y vuelve al listado.
+- **Guardar y cobrar ahora**: registra la venta y abre inmediatamente el
+  formulario de abono.
+
+## Pagos
+
+La pantalla **Pagos** se organiza en dos pestanas:
+
+- **Pendientes**: muestra primero los eventos que todavia tienen saldo por
+  cobrar y tambien las ventas independientes pendientes.
+- **Historial**: muestra los eventos y ventas que ya fueron pagados por completo
+  y permite consultar sus abonos sin editar ni eliminar pagos directamente.
+
+Cuando el saldo pendiente de un evento o venta llega a cero, deja de aparecer en
+Pendientes y pasa automaticamente al Historial.
+
+Despues de registrar un abono, la app muestra un recibo de muestra con numero,
+cuenta, fecha, metodo de pago, monto abonado y saldo restante.
 
 ## Servicios
 
 La pantalla **Servicios** muestra los servicios fotograficos disponibles, su
-descripcion y precio.
-
-Desde esta pantalla se puede crear, editar, activar, desactivar o eliminar un
-servicio si no esta siendo usado por eventos.
+descripcion y precio. Desde esta pantalla se puede crear, editar, activar,
+desactivar o eliminar un servicio si no esta siendo usado por eventos.
 
 ## Capturas incluidas
 
 El manual se acompana con capturas reales de las pantallas principales en la
-carpeta `screenshots`:
-
-- `flutter_login.png`: inicio de sesion.
-- `flutter_dashboard.png`: resumen general de la aplicacion.
-- `flutter_clientes.png`: listado de clientes.
-- `flutter_form_cliente.png`: formulario de registro/edicion de cliente.
-- `flutter_contact_sheet.png`: detalle de cliente con acciones.
-- `flutter_eventos.png`: listado de eventos.
-- `flutter_pagos.png`: listado de pagos.
+carpeta `screenshots`.
 
 ## Problemas comunes
 
 - Si no inicia sesion, revisar correo, contrasena y conexion.
 - Si no aparecen datos remotos, revisar que Firebase este configurado.
 - Si el APK no instala, habilitar instalacion desde fuentes externas.
-- Si un cliente no se guarda en Firebase, revisar reglas de Firestore y sesion
+- Si un registro no se guarda Online, revisar reglas de Firestore y sesion
   activa.
 
 ## Soporte
