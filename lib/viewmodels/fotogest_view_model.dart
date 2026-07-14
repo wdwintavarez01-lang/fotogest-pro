@@ -32,12 +32,15 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   int get activeEvents {
-    return events.where((event) => event.status != 'completado').length;
+    return events.where((event) {
+      return event.status == 'programado' || event.status == 'en_proceso';
+    }).length;
   }
 
   double get totalPending {
     double total = 0;
     for (final event in events) {
+      if (event.status == 'cancelado') continue;
       final package = packageFor(event.packageId);
       final paid = paymentsForEvent(
         event.id,
@@ -93,6 +96,35 @@ class FotogestViewModel extends ChangeNotifier {
     return payments.where((payment) => payment.eventId == eventId).toList();
   }
 
+  List<PhotoEvent> get pendingPaymentEvents {
+    final pending = events.where((event) {
+      return event.status != 'cancelado' && pendingForEvent(event.id) > 0;
+    }).toList();
+    pending.sort((left, right) {
+      final pendingCompare = pendingForEvent(
+        right.id,
+      ).compareTo(pendingForEvent(left.id));
+      if (pendingCompare != 0) return pendingCompare;
+      return left.dateTime.compareTo(right.dateTime);
+    });
+    return pending;
+  }
+
+  List<PhotoEvent> get paidEvents {
+    final paid = events.where((event) {
+      final package = packageFor(event.packageId);
+      return event.status != 'cancelado' &&
+          package.price > 0 &&
+          pendingForEvent(event.id) <= 0;
+    }).toList();
+    paid.sort((left, right) {
+      final rightDate = lastPaymentForEvent(right.id)?.paidAt ?? right.dateTime;
+      final leftDate = lastPaymentForEvent(left.id)?.paidAt ?? left.dateTime;
+      return rightDate.compareTo(leftDate);
+    });
+    return paid;
+  }
+
   double paidForEvent(String eventId) {
     return paymentsForEvent(eventId).fold(0, (sum, payment) {
       return sum + payment.amount;
@@ -101,9 +133,17 @@ class FotogestViewModel extends ChangeNotifier {
 
   double pendingForEvent(String eventId) {
     final event = eventFor(eventId);
+    if (event.status == 'cancelado') return 0;
     final package = packageFor(event.packageId);
     final paid = paidForEvent(eventId);
     return (package.price - paid).clamp(0, package.price).toDouble();
+  }
+
+  Payment? lastPaymentForEvent(String eventId) {
+    final eventPayments = paymentsForEvent(eventId);
+    if (eventPayments.isEmpty) return null;
+    eventPayments.sort((left, right) => right.paidAt.compareTo(left.paidAt));
+    return eventPayments.first;
   }
 
   bool hasEventsForClient(String clientId) {

@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../models/payment.dart';
 import '../models/photo_event.dart';
 import '../utils/formatters.dart';
-import '../viewmodels/fotogest_view_model.dart';
 import '../widgets/app_scope.dart';
 import 'event_form_screen.dart';
 
 class PaymentFormArguments {
-  const PaymentFormArguments({this.event, this.payment});
+  const PaymentFormArguments({this.event});
 
   final PhotoEvent? event;
-  final Payment? payment;
 }
 
 class PaymentFormScreen extends StatefulWidget {
@@ -27,7 +24,6 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   final formKey = GlobalKey<FormState>();
   final amountController = TextEditingController();
   final noteController = TextEditingController();
-  Payment? payment;
   String? selectedEventId;
   String method = 'efectivo';
   DateTime paidAt = DateTime.now();
@@ -46,50 +42,29 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
-    final events = viewModel.events;
+    final events = viewModel.pendingPaymentEvents;
 
     if (!didLoadArguments) {
       didLoadArguments = true;
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments is PaymentFormArguments) {
-        payment = arguments.payment;
-        selectedEventId = arguments.payment?.eventId ?? arguments.event?.id;
-        if (arguments.payment != null) {
-          amountController.text = arguments.payment!.amount.toStringAsFixed(0);
-          noteController.text = arguments.payment!.note;
-          method = arguments.payment!.method;
-          paidAt = arguments.payment!.paidAt;
-          if (!methods.contains(method)) {
-            method = 'otro';
-          }
-        }
+        selectedEventId = arguments.event?.id;
       } else if (arguments is PhotoEvent) {
         selectedEventId = arguments.id;
-      } else if (arguments is Payment) {
-        payment = arguments;
-        selectedEventId = arguments.eventId;
-        amountController.text = arguments.amount.toStringAsFixed(0);
-        noteController.text = arguments.note;
-        method = arguments.method;
-        paidAt = arguments.paidAt;
-        if (!methods.contains(method)) {
-          method = 'otro';
-        }
       }
 
       selectedEventId ??= events.isEmpty ? null : events.first.id;
     }
 
-    final isEditing = payment != null;
     final selectedEvent = selectedEventId == null
         ? null
         : viewModel.eventFor(selectedEventId!);
     final pending = selectedEvent == null
         ? 0.0
-        : _availableAmount(viewModel, selectedEvent.id);
+        : viewModel.pendingForEvent(selectedEvent.id);
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Editar pago' : 'Registrar pago')),
+      appBar: AppBar(title: const Text('Registrar abono')),
       body: SafeArea(
         child: events.isEmpty
             ? _MissingEventState()
@@ -136,7 +111,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                           Card(
                             child: ListTile(
                               leading: const Icon(Icons.account_balance_wallet),
-                              title: const Text('Disponible para cobrar'),
+                              title: const Text('Saldo pendiente'),
                               subtitle: Text(
                                 '${viewModel.clientFor(selectedEvent.clientId).name} - '
                                 '${viewModel.packageFor(selectedEvent.packageId).name}',
@@ -151,7 +126,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                         TextFormField(
                           controller: amountController,
                           decoration: const InputDecoration(
-                            labelText: 'Monto cobrado',
+                            labelText: 'Monto a abonar',
                             prefixIcon: Icon(Icons.attach_money),
                           ),
                           keyboardType: TextInputType.number,
@@ -218,11 +193,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                 )
                               : const Icon(Icons.save_outlined),
                           label: Text(
-                            isSaving
-                                ? 'Guardando...'
-                                : isEditing
-                                ? 'Actualizar pago'
-                                : 'Guardar pago',
+                            isSaving ? 'Guardando...' : 'Guardar abono',
                           ),
                           onPressed: isSaving
                               ? null
@@ -237,26 +208,16 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                   setState(() {
                                     isSaving = true;
                                   });
-                                  final savedRemotely = isEditing
-                                      ? await viewModel.updatePayment(
-                                          payment: payment!,
-                                          eventId: selectedEventId!,
-                                          amount: _parseAmount(
-                                            amountController.text,
-                                          )!,
-                                          method: method,
-                                          paidAt: paidAt,
-                                          note: noteController.text,
-                                        )
-                                      : await viewModel.addPayment(
-                                          eventId: selectedEventId!,
-                                          amount: _parseAmount(
-                                            amountController.text,
-                                          )!,
-                                          method: method,
-                                          paidAt: paidAt,
-                                          note: noteController.text,
-                                        );
+                                  final savedRemotely = await viewModel
+                                      .addPayment(
+                                        eventId: selectedEventId!,
+                                        amount: _parseAmount(
+                                          amountController.text,
+                                        )!,
+                                        method: method,
+                                        paidAt: paidAt,
+                                        note: noteController.text,
+                                      );
                                   if (!mounted) return;
                                   setState(() {
                                     isSaving = false;
@@ -265,8 +226,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                     SnackBar(
                                       content: Text(
                                         savedRemotely
-                                            ? 'Pago guardado Online'
-                                            : 'Pago guardado en modo local',
+                                            ? 'Abono guardado Online'
+                                            : 'Abono guardado en modo local',
                                       ),
                                     ),
                                   );
@@ -286,11 +247,6 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
               ),
       ),
     );
-  }
-
-  double _availableAmount(FotogestViewModel viewModel, String eventId) {
-    final currentAmount = payment?.eventId == eventId ? payment!.amount : 0.0;
-    return viewModel.pendingForEvent(eventId) + currentAmount;
   }
 
   Future<void> _pickDate() async {
@@ -334,7 +290,7 @@ class _MissingEventState extends StatelessWidget {
           const Icon(Icons.info_outline, size: 42),
           const SizedBox(height: 16),
           Text(
-            'Antes de registrar un pago necesitas tener al menos un evento.',
+            'No hay eventos pendientes por cobrar.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
           ),

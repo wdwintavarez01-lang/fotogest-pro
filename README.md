@@ -50,8 +50,9 @@ Flujo funcional principal:
 - Crear, consultar, editar y eliminar clientes sin eventos asociados.
 - Crear, consultar, editar y eliminar servicios fotograficos.
 - Crear, consultar, editar y eliminar eventos asociados a cliente y servicio.
-- Registrar, editar y eliminar pagos asociados a eventos.
-- Calcular abonado y pendiente desde los pagos registrados.
+- Registrar abonos asociados a eventos pendientes.
+- Priorizar cobros pendientes y mover eventos pagados al historial.
+- Calcular abonado y pendiente desde los abonos registrados.
 - Entrar en modo offline usando credenciales guardadas previamente.
 
 La base remota usa las colecciones `usuarios`, `clientes`, `paquetes`,

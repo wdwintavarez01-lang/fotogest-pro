@@ -15,10 +15,11 @@
 | 11 | Editar servicio | Abrir un servicio y modificar precio o estado. | El cambio se refleja en la lista. | Aprobado |
 | 12 | Crear evento | Ir a Eventos, presionar Nuevo y seleccionar cliente, servicio, fecha y ubicacion. | El evento aparece en la agenda y en el Dashboard. | Aprobado |
 | 13 | Editar evento | Abrir un evento y cambiar estado o datos principales. | La agenda muestra los datos actualizados. | Aprobado |
-| 14 | Registrar pago | Desde Eventos o Pagos registrar un monto para un evento. | El pago aparece en Pagos y reduce el saldo pendiente. | Aprobado |
+| 14 | Registrar abono | Desde Eventos o Pagos registrar un monto para un evento pendiente. | El abono reduce el saldo pendiente. | Aprobado |
 | 15 | Validar monto de pago | Registrar un pago mayor al saldo pendiente. | El formulario bloquea el monto y muestra mensaje. | Aprobado |
-| 16 | Eliminar pago | Confirmar eliminacion de un pago. | El pago desaparece y el saldo pendiente aumenta. | Aprobado |
-| 17 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
+| 16 | Historial de pagos | Completar el pago total de un evento. | El evento sale de Pendientes y aparece en Historial. | Aprobado |
+| 17 | Consultar abonos | Abrir el Historial y ver el detalle de abonos. | La app muestra los abonos sin botones de editar o eliminar. | Aprobado |
+| 18 | Acceso offline | Iniciar sesion una vez Online, cerrar app, simular falta de internet y usar las mismas credenciales. | La app permite entrar en modo Offline con credenciales guardadas. | Aprobado |
 
 ## Errores corregidos
 
@@ -29,3 +30,4 @@
 - Se activaron formularios reales para servicios, eventos y pagos.
 - Se bloqueo el borrado de clientes o servicios que ya estan asociados a eventos.
 - Se agrego acceso offline usando credenciales previamente validadas.
+- Se rediseño Pagos como cobros pendientes e historial de eventos pagados.

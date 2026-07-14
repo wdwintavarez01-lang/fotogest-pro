@@ -59,14 +59,15 @@ Desde esta pantalla se puede:
 
 ## Pagos
 
-La pantalla **Pagos** muestra los pagos registrados, el evento relacionado, el
-metodo de pago y la fecha.
+La pantalla **Pagos** se organiza en dos pestañas:
 
-Desde esta pantalla se puede:
+- **Pendientes**: muestra primero los eventos que todavia tienen saldo por
+  cobrar y permite registrar abonos.
+- **Historial**: muestra los eventos que ya fueron pagados por completo y
+  permite consultar sus abonos sin editar ni eliminar pagos directamente.
 
-- Registrar un pago nuevo.
-- Editar un pago.
-- Eliminar un pago.
+Cuando el saldo pendiente de un evento llega a cero, deja de aparecer en
+Pendientes y pasa automaticamente al Historial.
 
 ## Servicios
 

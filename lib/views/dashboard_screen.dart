@@ -19,7 +19,9 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = AppScope.of(context);
-    final nextEvents = viewModel.events.take(3).toList();
+    final nextEvents =
+        viewModel.events.where((event) => event.status != 'cancelado').toList()
+          ..sort((left, right) => left.dateTime.compareTo(right.dateTime));
 
     return Scaffold(
       appBar: AppBar(
@@ -152,7 +154,7 @@ class DashboardScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
-            for (final event in nextEvents)
+            for (final event in nextEvents.take(3))
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Card(

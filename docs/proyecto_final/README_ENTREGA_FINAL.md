@@ -10,7 +10,8 @@ servicios fotograficos.
 - Framework: Flutter / Dart.
 - Backend: Firebase Authentication + Cloud Firestore.
 - Arquitectura: MVVM con modelos, repositorio, servicios, vistas y widgets.
-- Funcionalidad central: gestion de clientes, servicios, eventos y pagos.
+- Funcionalidad central: gestion de clientes, servicios, eventos, abonos e
+  historial de eventos pagados.
 - Persistencia: Cloud Firestore con respaldo local y acceso offline con
   credenciales guardadas.
 - Pantallas: Login, Dashboard, Clientes, Formulario de cliente, Eventos, Pagos
@@ -28,8 +29,10 @@ servicios fotograficos.
 7. Editar el cliente.
 8. Crear o editar un servicio fotografico.
 9. Crear un evento asociado a cliente y servicio.
-10. Registrar un pago del evento.
-11. Revisar el Dashboard para confirmar abonado y pendiente.
+10. Registrar un abono del evento.
+11. Revisar Pagos para confirmar que los eventos pendientes tienen prioridad.
+12. Completar el pago de un evento y confirmar que pasa al Historial.
+13. Revisar el Dashboard para confirmar abonado y pendiente.
 
 ## Archivos importantes
 
