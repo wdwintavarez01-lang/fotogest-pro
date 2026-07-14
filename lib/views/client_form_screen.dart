@@ -65,8 +65,12 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     ),
                     textInputAction: TextInputAction.next,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      final name = value?.trim() ?? '';
+                      if (name.isEmpty) {
                         return 'El nombre es obligatorio';
+                      }
+                      if (name.length < 3) {
+                        return 'Escribe al menos 3 caracteres';
                       }
                       return null;
                     },
@@ -81,8 +85,13 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      final phone = value?.trim() ?? '';
+                      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                      if (phone.isEmpty) {
                         return 'El telefono es obligatorio';
+                      }
+                      if (digits.length < 10) {
+                        return 'Escribe un telefono valido';
                       }
                       return null;
                     },

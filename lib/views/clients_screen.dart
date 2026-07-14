@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/client.dart';
 import '../widgets/app_scope.dart';
 import '../widgets/fotogest_bottom_nav.dart';
 import 'client_form_screen.dart';
@@ -45,6 +46,7 @@ class ClientsScreen extends StatelessWidget {
                       title: Text(client.name),
                       subtitle: Text('${client.phone}\n${client.notes}'),
                       isThreeLine: client.notes.isNotEmpty,
+                      onTap: () => _showClientDetails(context, client),
                       trailing: Wrap(
                         spacing: 4,
                         children: [
@@ -69,6 +71,77 @@ class ClientsScreen extends StatelessWidget {
                 },
               ),
       ),
+    );
+  }
+
+  Future<void> _showClientDetails(BuildContext context, Client client) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  client.name,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.phone_outlined),
+                  title: const Text('Telefono'),
+                  subtitle: Text(client.phone),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.notes_outlined),
+                  title: const Text('Notas'),
+                  subtitle: Text(
+                    client.notes.isEmpty
+                        ? 'Sin notas registradas'
+                        : client.notes,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(
+                            context,
+                            ClientFormScreen.routeName,
+                            arguments: client,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Eliminar'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _confirmDelete(context, client.id);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

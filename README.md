@@ -2,15 +2,19 @@
 
 Sistema de gestion para fotografos de eventos.
 
-Prototipo navegable de aplicacion movil para fotografos independientes que trabajan en eventos. Permite demostrar el flujo principal del MVP: acceso, resumen del negocio, clientes, formulario de cliente, eventos, pagos y paquetes fotograficos.
+Aplicacion movil desarrollada en Flutter para organizar clientes, eventos,
+paquetes fotograficos y pagos. El flujo central permite iniciar sesion, consultar
+un resumen del negocio y ejecutar un CRUD completo de clientes conectado con
+Firebase Authentication y Cloud Firestore.
 
 ## Stack
 
 - Flutter 3.44.4
 - Dart 3.12.2
 - Arquitectura MVVM
-- Persistencia preparada para Firebase Authentication + Cloud Firestore
-- Datos mock locales para que el prototipo compile y se ejecute sin configuracion externa
+- Firebase Authentication
+- Cloud Firestore
+- Datos locales de respaldo para modo demo si Firebase no responde
 
 ## Estructura
 
@@ -32,10 +36,33 @@ docs/semana_4/
 - Login
 - Dashboard
 - Clientes
-- Formulario de cliente
+- Detalle de cliente
+- Formulario de cliente para crear y editar
 - Eventos
 - Pagos
 - Paquetes fotograficos
+
+## Funcionalidad principal
+
+CRUD completo de clientes:
+
+- Crear cliente.
+- Consultar lista de clientes.
+- Ver detalle de cliente.
+- Editar cliente.
+- Eliminar cliente con confirmacion.
+
+La app tambien consulta eventos, pagos y paquetes desde el repositorio de datos.
+
+## Credenciales de prueba
+
+```text
+Correo: edwin.tavarez@example.com
+Contrasena: 123456
+```
+
+Estas credenciales deben existir en Firebase Authentication para probar el modo
+remoto. Si Firebase no responde, la app abre en modo demo local.
 
 ## Validacion local
 
@@ -50,6 +77,15 @@ APK generado:
 ```text
 build/app/outputs/flutter-apk/app-release.apk
 ```
+
+## Documentacion final
+
+La carpeta `docs/proyecto_final/` contiene:
+
+- `README_ENTREGA_FINAL.md`
+- `documentacion_tecnica.md`
+- `manual_usuario.md`
+- `plan_pruebas.md`
 
 ## Datos base
 

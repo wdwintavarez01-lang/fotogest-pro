@@ -40,11 +40,45 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Client clientFor(String id) {
-    return clients.firstWhere((client) => client.id == id);
+    return clients.firstWhere(
+      (client) => client.id == id,
+      orElse: () => Client(
+        id: id,
+        userId: 'usr_001',
+        name: 'Cliente no encontrado',
+        phone: 'Sin telefono',
+        notes: 'El registro relacionado no existe en la base de datos.',
+      ),
+    );
+  }
+
+  PhotoEvent eventFor(String id) {
+    return events.firstWhere(
+      (event) => event.id == id,
+      orElse: () => PhotoEvent(
+        id: id,
+        clientId: '',
+        packageId: '',
+        userId: 'usr_001',
+        type: 'Evento no encontrado',
+        dateTime: DateTime.now(),
+        location: 'Sin ubicacion',
+        status: 'pendiente',
+      ),
+    );
   }
 
   PhotoPackage packageFor(String id) {
-    return packages.firstWhere((package) => package.id == id);
+    return packages.firstWhere(
+      (package) => package.id == id,
+      orElse: () => PhotoPackage(
+        id: id,
+        name: 'Paquete no encontrado',
+        description: 'El paquete relacionado no existe en la base de datos.',
+        price: 0,
+        active: false,
+      ),
+    );
   }
 
   List<Payment> paymentsForEvent(String eventId) {

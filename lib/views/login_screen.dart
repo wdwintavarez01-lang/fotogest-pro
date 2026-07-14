@@ -64,8 +64,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final email = value?.trim() ?? '';
+                        if (email.isEmpty) {
                           return 'El correo es obligatorio';
+                        }
+                        if (!email.contains('@') || !email.contains('.')) {
+                          return 'Escribe un correo valido';
                         }
                         return null;
                       },
@@ -79,8 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       obscureText: true,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final password = value?.trim() ?? '';
+                        if (password.isEmpty) {
                           return 'La contrasena es obligatoria';
+                        }
+                        if (password.length < 6) {
+                          return 'Debe tener al menos 6 caracteres';
                         }
                         return null;
                       },
