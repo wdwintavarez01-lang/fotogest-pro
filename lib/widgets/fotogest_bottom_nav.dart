@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../views/clients_screen.dart';
 import '../views/dashboard_screen.dart';
 import '../views/events_screen.dart';
+import '../views/packages_screen.dart';
 import '../views/payments_screen.dart';
 
 class FotogestBottomNav extends StatelessWidget {
@@ -16,6 +17,7 @@ class FotogestBottomNav extends StatelessWidget {
       DashboardScreen.routeName,
       ClientsScreen.routeName,
       EventsScreen.routeName,
+      PackagesScreen.routeName,
       PaymentsScreen.routeName,
     ];
     final index = routes.indexOf(currentRoute).clamp(0, routes.length - 1);
@@ -37,6 +39,11 @@ class FotogestBottomNav extends StatelessWidget {
           icon: Icon(Icons.event_note_outlined),
           selectedIcon: Icon(Icons.event_note),
           label: 'Eventos',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.inventory_2_outlined),
+          selectedIcon: Icon(Icons.inventory_2),
+          label: 'Servicios',
         ),
         NavigationDestination(
           icon: Icon(Icons.payments_outlined),

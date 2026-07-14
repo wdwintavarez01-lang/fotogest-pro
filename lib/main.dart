@@ -9,9 +9,12 @@ import 'viewmodels/fotogest_view_model.dart';
 import 'views/client_form_screen.dart';
 import 'views/clients_screen.dart';
 import 'views/dashboard_screen.dart';
+import 'views/event_form_screen.dart';
 import 'views/events_screen.dart';
 import 'views/login_screen.dart';
+import 'views/package_form_screen.dart';
 import 'views/packages_screen.dart';
+import 'views/payment_form_screen.dart';
 import 'views/payments_screen.dart';
 import 'widgets/app_scope.dart';
 
@@ -72,8 +75,11 @@ class _FotoGestAppState extends State<FotoGestApp> {
           ClientsScreen.routeName: (_) => const ClientsScreen(),
           ClientFormScreen.routeName: (_) => const ClientFormScreen(),
           EventsScreen.routeName: (_) => const EventsScreen(),
+          EventFormScreen.routeName: (_) => const EventFormScreen(),
           PaymentsScreen.routeName: (_) => const PaymentsScreen(),
+          PaymentFormScreen.routeName: (_) => const PaymentFormScreen(),
           PackagesScreen.routeName: (_) => const PackagesScreen(),
+          PackageFormScreen.routeName: (_) => const PackageFormScreen(),
         },
       ),
     );

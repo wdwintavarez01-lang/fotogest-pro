@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
 
-import '../models/client.dart';
+import '../models/photo_package.dart';
 import '../widgets/app_scope.dart';
 
-class ClientFormScreen extends StatefulWidget {
-  const ClientFormScreen({super.key});
+class PackageFormScreen extends StatefulWidget {
+  const PackageFormScreen({super.key});
 
-  static const routeName = '/clients/new';
+  static const routeName = '/services/new';
 
   @override
-  State<ClientFormScreen> createState() => _ClientFormScreenState();
+  State<PackageFormScreen> createState() => _PackageFormScreenState();
 }
 
-class _ClientFormScreenState extends State<ClientFormScreen> {
+class _PackageFormScreenState extends State<PackageFormScreen> {
   final formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
-  final phoneController = TextEditingController();
-  final notesController = TextEditingController();
-  Client? client;
+  final descriptionController = TextEditingController();
+  final priceController = TextEditingController();
+  PhotoPackage? service;
+  bool active = true;
   bool didLoadArguments = false;
   bool isSaving = false;
 
   @override
   void dispose() {
     nameController.dispose();
-    phoneController.dispose();
-    notesController.dispose();
+    descriptionController.dispose();
+    priceController.dispose();
     super.dispose();
   }
 
@@ -35,18 +36,19 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
     if (!didLoadArguments) {
       didLoadArguments = true;
       final arguments = ModalRoute.of(context)?.settings.arguments;
-      if (arguments is Client) {
-        client = arguments;
+      if (arguments is PhotoPackage) {
+        service = arguments;
         nameController.text = arguments.name;
-        phoneController.text = arguments.phone;
-        notesController.text = arguments.notes;
+        descriptionController.text = arguments.description;
+        priceController.text = arguments.price.toStringAsFixed(0);
+        active = arguments.active;
       }
     }
-    final isEditing = client != null;
+    final isEditing = service != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Editar cliente' : 'Nuevo cliente'),
+        title: Text(isEditing ? 'Editar servicio' : 'Nuevo servicio'),
       ),
       body: SafeArea(
         child: ListView(
@@ -60,15 +62,13 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   TextFormField(
                     controller: nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Nombre completo',
-                      prefixIcon: Icon(Icons.badge_outlined),
+                      labelText: 'Nombre del servicio',
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
                     ),
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       final name = value?.trim() ?? '';
-                      if (name.isEmpty) {
-                        return 'El nombre es obligatorio';
-                      }
+                      if (name.isEmpty) return 'El nombre es obligatorio';
                       if (name.length < 3) {
                         return 'Escribe al menos 3 caracteres';
                       }
@@ -77,33 +77,47 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    controller: phoneController,
+                    controller: descriptionController,
                     decoration: const InputDecoration(
-                      labelText: 'Telefono',
-                      prefixIcon: Icon(Icons.phone_outlined),
+                      labelText: 'Descripcion',
+                      prefixIcon: Icon(Icons.notes_outlined),
                     ),
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
+                    maxLines: 3,
                     validator: (value) {
-                      final phone = value?.trim() ?? '';
-                      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-                      if (phone.isEmpty) {
-                        return 'El telefono es obligatorio';
-                      }
-                      if (digits.length < 10) {
-                        return 'Escribe un telefono valido';
+                      final description = value?.trim() ?? '';
+                      if (description.isEmpty) {
+                        return 'La descripcion es obligatoria';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    controller: notesController,
+                    controller: priceController,
                     decoration: const InputDecoration(
-                      labelText: 'Notas',
-                      prefixIcon: Icon(Icons.notes_outlined),
+                      labelText: 'Precio',
+                      prefixIcon: Icon(Icons.attach_money),
                     ),
-                    maxLines: 4,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      final price = _parsePrice(value ?? '');
+                      if (price == null || price <= 0) {
+                        return 'Escribe un precio valido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Servicio activo'),
+                    subtitle: const Text('Disponible para nuevos eventos'),
+                    value: active,
+                    onChanged: (value) {
+                      setState(() {
+                        active = value;
+                      });
+                    },
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
@@ -118,8 +132,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                       isSaving
                           ? 'Guardando...'
                           : isEditing
-                          ? 'Actualizar cliente'
-                          : 'Guardar cliente',
+                          ? 'Actualizar servicio'
+                          : 'Guardar servicio',
                     ),
                     onPressed: isSaving
                         ? null
@@ -131,16 +145,18 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               isSaving = true;
                             });
                             final savedRemotely = isEditing
-                                ? await viewModel.updateClient(
-                                    client: client!,
+                                ? await viewModel.updatePackage(
+                                    package: service!,
                                     name: nameController.text,
-                                    phone: phoneController.text,
-                                    notes: notesController.text,
+                                    description: descriptionController.text,
+                                    price: _parsePrice(priceController.text)!,
+                                    active: active,
                                   )
-                                : await viewModel.addClient(
+                                : await viewModel.addPackage(
                                     name: nameController.text,
-                                    phone: phoneController.text,
-                                    notes: notesController.text,
+                                    description: descriptionController.text,
+                                    price: _parsePrice(priceController.text)!,
+                                    active: active,
                                   );
                             if (!mounted) return;
                             setState(() {
@@ -150,8 +166,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                               SnackBar(
                                 content: Text(
                                   savedRemotely
-                                      ? 'Cliente guardado Online'
-                                      : 'Cliente guardado en modo local',
+                                      ? 'Servicio guardado Online'
+                                      : 'Servicio guardado en modo local',
                                 ),
                               ),
                             );
@@ -171,5 +187,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
         ),
       ),
     );
+  }
+
+  double? _parsePrice(String value) {
+    final normalized = value.replaceAll('RD\$', '').replaceAll(',', '').trim();
+    return double.tryParse(normalized);
   }
 }

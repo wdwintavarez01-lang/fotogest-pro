@@ -27,7 +27,7 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('FotoGest Pro'),
         actions: [
           IconButton(
-            tooltip: 'Paquetes',
+            tooltip: 'Servicios',
             icon: const Icon(Icons.inventory_2_outlined),
             onPressed: () =>
                 Navigator.pushNamed(context, PackagesScreen.routeName),
@@ -63,9 +63,7 @@ class DashboardScreen extends StatelessWidget {
                           : Icons.phone_android_outlined,
                       size: 18,
                     ),
-                    label: Text(
-                      viewModel.remoteDataLoaded ? 'Firebase' : 'Local',
-                    ),
+                    label: Text(viewModel.connectionLabel),
                   ),
               ],
             ),
@@ -122,6 +120,28 @@ class DashboardScreen extends StatelessWidget {
                     label: const Text('Eventos'),
                     onPressed: () =>
                         Navigator.pushNamed(context, EventsScreen.routeName),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.inventory_2_outlined),
+                    label: const Text('Servicios'),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, PackagesScreen.routeName),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    icon: const Icon(Icons.payments_outlined),
+                    label: const Text('Cobrar'),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, PaymentsScreen.routeName),
                   ),
                 ),
               ],

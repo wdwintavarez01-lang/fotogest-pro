@@ -18,4 +18,26 @@ class PhotoEvent {
   final DateTime dateTime;
   final String location;
   final String status;
+
+  PhotoEvent copyWith({
+    String? id,
+    String? clientId,
+    String? packageId,
+    String? userId,
+    String? type,
+    DateTime? dateTime,
+    String? location,
+    String? status,
+  }) {
+    return PhotoEvent(
+      id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
+      packageId: packageId ?? this.packageId,
+      userId: userId ?? this.userId,
+      type: type ?? this.type,
+      dateTime: dateTime ?? this.dateTime,
+      location: location ?? this.location,
+      status: status ?? this.status,
+    );
+  }
 }

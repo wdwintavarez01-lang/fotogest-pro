@@ -3,7 +3,7 @@
 ## Proposito de la aplicacion
 
 FotoGest Pro ayuda a fotografos de eventos a organizar clientes, eventos,
-paquetes y pagos desde una aplicacion movil.
+servicios y pagos desde una aplicacion movil.
 
 ## Requisitos
 
@@ -23,7 +23,8 @@ paquetes y pagos desde una aplicacion movil.
 1. Abrir la aplicacion.
 2. Escribir correo y contrasena.
 3. Presionar **Entrar**.
-4. Si Firebase no responde, la app puede abrir en modo demo local.
+4. Si no hay internet, la app puede entrar offline con esas mismas credenciales
+   solo si ya se usaron antes correctamente en ese celular.
 
 ## Dashboard
 
@@ -47,17 +48,33 @@ El Dashboard muestra un resumen del negocio:
 ## Eventos
 
 La pantalla **Eventos** muestra los eventos registrados, el cliente asociado,
-la fecha, ubicacion, paquete contratado y monto pendiente.
+la fecha, ubicacion, servicio contratado, monto abonado y monto pendiente.
+
+Desde esta pantalla se puede:
+
+- Crear un evento nuevo.
+- Editar un evento existente.
+- Eliminar un evento.
+- Registrar un cobro directo desde un evento pendiente.
 
 ## Pagos
 
 La pantalla **Pagos** muestra los pagos registrados, el evento relacionado, el
 metodo de pago y la fecha.
 
-## Paquetes
+Desde esta pantalla se puede:
 
-La pantalla **Paquetes** muestra los servicios fotograficos disponibles, su
+- Registrar un pago nuevo.
+- Editar un pago.
+- Eliminar un pago.
+
+## Servicios
+
+La pantalla **Servicios** muestra los servicios fotograficos disponibles, su
 descripcion y precio.
+
+Desde esta pantalla se puede crear, editar, activar, desactivar o eliminar un
+servicio si no esta siendo usado por eventos.
 
 ## Capturas incluidas
 

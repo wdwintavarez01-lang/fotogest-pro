@@ -12,12 +12,20 @@ class FotogestViewModel extends ChangeNotifier {
   final FotogestRepository _repository;
   bool isLoading = false;
   bool remoteDataLoaded = false;
+  bool offlineSession = false;
   String? connectionMessage;
 
   List<Client> get clients => _repository.getClients();
   List<PhotoEvent> get events => _repository.getEvents();
   List<PhotoPackage> get packages => _repository.getPackages();
   List<Payment> get payments => _repository.getPayments();
+
+  String get connectionLabel {
+    if (isLoading) return 'Cargando';
+    if (remoteDataLoaded && !offlineSession) return 'Online';
+    if (offlineSession) return 'Offline';
+    return 'Local';
+  }
 
   double get totalPaid {
     return payments.fold(0, (total, payment) => total + payment.amount);
@@ -34,7 +42,7 @@ class FotogestViewModel extends ChangeNotifier {
       final paid = paymentsForEvent(
         event.id,
       ).fold<double>(0, (sum, payment) => sum + payment.amount);
-      total += (package.price - paid).clamp(0, package.price);
+      total += (package.price - paid).clamp(0, package.price).toDouble();
     }
     return total;
   }
@@ -91,6 +99,21 @@ class FotogestViewModel extends ChangeNotifier {
     });
   }
 
+  double pendingForEvent(String eventId) {
+    final event = eventFor(eventId);
+    final package = packageFor(event.packageId);
+    final paid = paidForEvent(eventId);
+    return (package.price - paid).clamp(0, package.price).toDouble();
+  }
+
+  bool hasEventsForClient(String clientId) {
+    return events.any((event) => event.clientId == clientId);
+  }
+
+  bool hasEventsForPackage(String packageId) {
+    return events.any((event) => event.packageId == packageId);
+  }
+
   Future<bool> loadRemoteData() async {
     if (!_repository.hasFirebase) return false;
 
@@ -100,13 +123,13 @@ class FotogestViewModel extends ChangeNotifier {
     try {
       remoteDataLoaded = await _repository.loadRemoteData();
       connectionMessage = remoteDataLoaded
-          ? 'Datos cargados desde Firebase'
+          ? 'Datos cargados en modo Online'
           : 'Usando datos locales del prototipo';
       return remoteDataLoaded;
     } catch (_) {
       remoteDataLoaded = false;
       connectionMessage =
-          'No se pudo leer Firebase. Revisa Authentication y reglas.';
+          'No se pudo leer la base de datos. Revisa la conexion.';
       return false;
     } finally {
       isLoading = false;
@@ -115,16 +138,24 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Future<bool> signIn({required String email, required String password}) async {
-    if (!_repository.hasFirebase) return true;
-
     try {
-      await _repository.signIn(email, password);
+      final signedIn = await _repository.signIn(email, password);
+      if (!signedIn) {
+        connectionMessage =
+            'No hay conexion y esas credenciales no estan guardadas.';
+        notifyListeners();
+        return false;
+      }
       await loadRemoteData();
-      connectionMessage = 'Sesion iniciada con Firebase';
+      offlineSession = _repository.lastSignInWasOffline;
+      connectionMessage = offlineSession
+          ? 'Sesion offline iniciada con credenciales guardadas'
+          : 'Sesion iniciada Online';
+      notifyListeners();
       return true;
     } catch (_) {
       connectionMessage =
-          'No se pudo iniciar sesion en Firebase. Se abrira el modo demo local.';
+          'No se pudo iniciar sesion. Revisa el correo, la contrasena o la conexion.';
       notifyListeners();
       return false;
     }
@@ -168,6 +199,154 @@ class FotogestViewModel extends ChangeNotifier {
 
   Future<bool> deleteClient(String clientId) async {
     final deletedRemotely = await _repository.deleteClient(clientId);
+    notifyListeners();
+    return deletedRemotely;
+  }
+
+  Future<bool> addPackage({
+    required String name,
+    required String description,
+    required double price,
+    bool active = true,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final savedRemotely = await _repository.addPackage(
+      PhotoPackage(
+        id: 'paq_$timestamp',
+        name: name.trim(),
+        description: description.trim(),
+        price: price,
+        active: active,
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> updatePackage({
+    required PhotoPackage package,
+    required String name,
+    required String description,
+    required double price,
+    required bool active,
+  }) async {
+    final savedRemotely = await _repository.updatePackage(
+      package.copyWith(
+        name: name.trim(),
+        description: description.trim(),
+        price: price,
+        active: active,
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> deletePackage(String packageId) async {
+    final deletedRemotely = await _repository.deletePackage(packageId);
+    notifyListeners();
+    return deletedRemotely;
+  }
+
+  Future<bool> addEvent({
+    required String clientId,
+    required String packageId,
+    required String type,
+    required DateTime dateTime,
+    required String location,
+    required String status,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final savedRemotely = await _repository.addEvent(
+      PhotoEvent(
+        id: 'evt_$timestamp',
+        clientId: clientId,
+        packageId: packageId,
+        userId: 'usr_001',
+        type: type.trim(),
+        dateTime: dateTime,
+        location: location.trim(),
+        status: status,
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> updateEvent({
+    required PhotoEvent event,
+    required String clientId,
+    required String packageId,
+    required String type,
+    required DateTime dateTime,
+    required String location,
+    required String status,
+  }) async {
+    final savedRemotely = await _repository.updateEvent(
+      event.copyWith(
+        clientId: clientId,
+        packageId: packageId,
+        type: type.trim(),
+        dateTime: dateTime,
+        location: location.trim(),
+        status: status,
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> deleteEvent(String eventId) async {
+    final deletedRemotely = await _repository.deleteEvent(eventId);
+    notifyListeners();
+    return deletedRemotely;
+  }
+
+  Future<bool> addPayment({
+    required String eventId,
+    required double amount,
+    required String method,
+    required DateTime paidAt,
+    String note = '',
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final savedRemotely = await _repository.addPayment(
+      Payment(
+        id: 'pag_$timestamp',
+        eventId: eventId,
+        amount: amount,
+        method: method,
+        paidAt: paidAt,
+        note: note.trim(),
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> updatePayment({
+    required Payment payment,
+    required String eventId,
+    required double amount,
+    required String method,
+    required DateTime paidAt,
+    String note = '',
+  }) async {
+    final savedRemotely = await _repository.updatePayment(
+      payment.copyWith(
+        eventId: eventId,
+        amount: amount,
+        method: method,
+        paidAt: paidAt,
+        note: note.trim(),
+      ),
+    );
+    notifyListeners();
+    return savedRemotely;
+  }
+
+  Future<bool> deletePayment(String paymentId) async {
+    final deletedRemotely = await _repository.deletePayment(paymentId);
     notifyListeners();
     return deletedRemotely;
   }

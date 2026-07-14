@@ -120,8 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 setState(() {
                                   isSubmitting = false;
                                 });
-                                if (!signedIn &&
-                                    viewModel.connectionMessage != null) {
+                                if (viewModel.connectionMessage != null) {
                                   messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -130,6 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   );
                                 }
+                                if (!signedIn) return;
                                 navigator.pushReplacementNamed(
                                   DashboardScreen.routeName,
                                 );

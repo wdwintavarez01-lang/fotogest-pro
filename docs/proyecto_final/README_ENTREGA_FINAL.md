@@ -3,18 +3,19 @@
 Este paquete corresponde al proyecto practico final de Seminario de Proyecto II
 (ISW-411). La aplicacion implementa un flujo movil para fotografos de eventos,
 con autenticacion, consulta de dashboard, gestion de clientes, eventos, pagos y
-paquetes fotograficos.
+servicios fotograficos.
 
 ## Estado de la app
 
 - Framework: Flutter / Dart.
 - Backend: Firebase Authentication + Cloud Firestore.
 - Arquitectura: MVVM con modelos, repositorio, servicios, vistas y widgets.
-- Funcionalidad central: CRUD completo de clientes.
-- Persistencia: Cloud Firestore con respaldo local de Firestore cuando aplica.
+- Funcionalidad central: gestion de clientes, servicios, eventos y pagos.
+- Persistencia: Cloud Firestore con respaldo local y acceso offline con
+  credenciales guardadas.
 - Pantallas: Login, Dashboard, Clientes, Formulario de cliente, Eventos, Pagos
-  y Paquetes.
-- Validaciones: correo, contrasena, nombre y telefono.
+  y Servicios.
+- Validaciones: correo, contrasena, nombre, telefono, precios, eventos y pagos.
 
 ## Flujo que debe probar el evaluador
 
@@ -25,8 +26,10 @@ paquetes fotograficos.
 5. Crear un cliente nuevo.
 6. Tocar un cliente para ver el detalle.
 7. Editar el cliente.
-8. Eliminar el cliente.
-9. Revisar Eventos, Pagos y Paquetes.
+8. Crear o editar un servicio fotografico.
+9. Crear un evento asociado a cliente y servicio.
+10. Registrar un pago del evento.
+11. Revisar el Dashboard para confirmar abonado y pendiente.
 
 ## Archivos importantes
 
@@ -34,6 +37,9 @@ paquetes fotograficos.
 - `lib/repositories/fotogest_repository.dart`: lectura y escritura en Firestore.
 - `lib/viewmodels/fotogest_view_model.dart`: estado de la aplicacion.
 - `lib/views/client_form_screen.dart`: formulario de creacion/edicion.
+- `lib/views/package_form_screen.dart`: formulario de servicios.
+- `lib/views/event_form_screen.dart`: formulario de eventos.
+- `lib/views/payment_form_screen.dart`: formulario de pagos.
 - `database/firestore_modelo_fotogest_pro.md`: modelo de datos.
 - `database/firestore.rules`: reglas base de Firestore.
 - `docs/proyecto_final/documentacion_tecnica.md`: documentacion tecnica.

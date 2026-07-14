@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_user.dart';
 import '../models/client.dart';
@@ -21,6 +25,10 @@ class FotogestRepository {
 
   final FirebaseFirestore? _firestore;
   final FirebaseAuth? _auth;
+  bool _lastSignInWasOffline = false;
+
+  static const _cachedEmailKey = 'fotogest_cached_email';
+  static const _cachedPasswordHashKey = 'fotogest_cached_password_hash';
 
   List<AppUser> _users = const [
     AppUser(
@@ -155,6 +163,7 @@ class FotogestRepository {
   ];
 
   bool get hasFirebase => _firestore != null;
+  bool get lastSignInWasOffline => _lastSignInWasOffline;
 
   List<AppUser> getUsers() => List.unmodifiable(_users);
   List<Client> getClients() => List.unmodifiable(_clients);
@@ -164,13 +173,33 @@ class FotogestRepository {
 
   Future<bool> signIn(String email, String password) async {
     final auth = _auth;
-    if (auth == null) return false;
+    if (auth == null) {
+      _lastSignInWasOffline = true;
+      return _signInWithCachedCredentials(email, password);
+    }
 
-    await auth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password.trim(),
-    );
-    return true;
+    try {
+      _lastSignInWasOffline = false;
+      await auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      await _cacheSuccessfulCredentials(email, password);
+      _lastSignInWasOffline = false;
+      return true;
+    } on FirebaseAuthException catch (error) {
+      if (!_isConnectivityAuthError(error.code)) rethrow;
+      final cachedAccess = await _signInWithCachedCredentials(email, password);
+      _lastSignInWasOffline = cachedAccess;
+      if (cachedAccess) return true;
+      rethrow;
+    } on FirebaseException catch (error) {
+      if (!_isConnectivityAuthError(error.code)) rethrow;
+      final cachedAccess = await _signInWithCachedCredentials(email, password);
+      _lastSignInWasOffline = cachedAccess;
+      if (cachedAccess) return true;
+      rethrow;
+    }
   }
 
   Future<bool> loadRemoteData() async {
@@ -225,14 +254,14 @@ class FotogestRepository {
 
     if (firestore != null) {
       try {
-        await firestore.collection('clientes').doc(client.id).update({
+        await firestore.collection('clientes').doc(client.id).set({
           'clienteId': client.id,
           'usuarioId': client.userId,
           'nombre': client.name,
           'telefono': client.phone,
           'notas': client.notes,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
         savedRemotely = true;
       } on FirebaseException {
         savedRemotely = false;
@@ -264,6 +293,253 @@ class FotogestRepository {
     }
 
     _clients.removeWhere((client) => client.id == clientId);
+    return deletedRemotely;
+  }
+
+  Future<bool> addPackage(PhotoPackage package) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('paquetes').doc(package.id).set({
+          'paqueteId': package.id,
+          'nombre': package.name,
+          'descripcion': package.description,
+          'precio': package.price,
+          'activo': package.active,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    _packages.removeWhere((savedPackage) => savedPackage.id == package.id);
+    _packages = [package, ..._packages]..sort(_sortByPackageId);
+    return savedRemotely;
+  }
+
+  Future<bool> updatePackage(PhotoPackage package) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('paquetes').doc(package.id).set({
+          'paqueteId': package.id,
+          'nombre': package.name,
+          'descripcion': package.description,
+          'precio': package.price,
+          'activo': package.active,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    final index = _packages.indexWhere((savedPackage) {
+      return savedPackage.id == package.id;
+    });
+    if (index == -1) {
+      _packages = [package, ..._packages]..sort(_sortByPackageId);
+    } else {
+      _packages[index] = package;
+    }
+    return savedRemotely;
+  }
+
+  Future<bool> deletePackage(String packageId) async {
+    var deletedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('paquetes').doc(packageId).delete();
+        deletedRemotely = true;
+      } on FirebaseException {
+        deletedRemotely = false;
+      }
+    }
+
+    _packages = _packages
+        .where((package) => package.id != packageId)
+        .toList(growable: true);
+    return deletedRemotely;
+  }
+
+  Future<bool> addEvent(PhotoEvent event) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('eventos').doc(event.id).set({
+          'eventoId': event.id,
+          'clienteId': event.clientId,
+          'paqueteId': event.packageId,
+          'usuarioId': event.userId,
+          'tipo': event.type,
+          'fechaHora': Timestamp.fromDate(event.dateTime),
+          'ubicacion': event.location,
+          'estado': event.status,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    _events.removeWhere((savedEvent) => savedEvent.id == event.id);
+    _events = [event, ..._events]..sort(_sortByEventDate);
+    return savedRemotely;
+  }
+
+  Future<bool> updateEvent(PhotoEvent event) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('eventos').doc(event.id).set({
+          'eventoId': event.id,
+          'clienteId': event.clientId,
+          'paqueteId': event.packageId,
+          'usuarioId': event.userId,
+          'tipo': event.type,
+          'fechaHora': Timestamp.fromDate(event.dateTime),
+          'ubicacion': event.location,
+          'estado': event.status,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    final index = _events.indexWhere((savedEvent) {
+      return savedEvent.id == event.id;
+    });
+    if (index == -1) {
+      _events = [event, ..._events]..sort(_sortByEventDate);
+    } else {
+      _events[index] = event;
+      _events.sort(_sortByEventDate);
+    }
+    return savedRemotely;
+  }
+
+  Future<bool> deleteEvent(String eventId) async {
+    var deletedRemotely = false;
+    final firestore = _firestore;
+    final paymentIds = _payments
+        .where((payment) => payment.eventId == eventId)
+        .map((payment) => payment.id)
+        .toList();
+
+    if (firestore != null) {
+      try {
+        final batch = firestore.batch();
+        batch.delete(firestore.collection('eventos').doc(eventId));
+        for (final paymentId in paymentIds) {
+          batch.delete(firestore.collection('pagos').doc(paymentId));
+        }
+        await batch.commit();
+        deletedRemotely = true;
+      } on FirebaseException {
+        deletedRemotely = false;
+      }
+    }
+
+    _events = _events
+        .where((event) => event.id != eventId)
+        .toList(growable: true);
+    _payments = _payments
+        .where((payment) => payment.eventId != eventId)
+        .toList(growable: true);
+    return deletedRemotely;
+  }
+
+  Future<bool> addPayment(Payment payment) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('pagos').doc(payment.id).set({
+          'pagoId': payment.id,
+          'eventoId': payment.eventId,
+          'monto': payment.amount,
+          'metodo': payment.method,
+          'fechaPago': Timestamp.fromDate(payment.paidAt),
+          'nota': payment.note,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    _payments.removeWhere((savedPayment) => savedPayment.id == payment.id);
+    _payments = [payment, ..._payments]..sort(_sortByPaymentDate);
+    return savedRemotely;
+  }
+
+  Future<bool> updatePayment(Payment payment) async {
+    var savedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('pagos').doc(payment.id).set({
+          'pagoId': payment.id,
+          'eventoId': payment.eventId,
+          'monto': payment.amount,
+          'metodo': payment.method,
+          'fechaPago': Timestamp.fromDate(payment.paidAt),
+          'nota': payment.note,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        savedRemotely = true;
+      } on FirebaseException {
+        savedRemotely = false;
+      }
+    }
+
+    final index = _payments.indexWhere((savedPayment) {
+      return savedPayment.id == payment.id;
+    });
+    if (index == -1) {
+      _payments = [payment, ..._payments]..sort(_sortByPaymentDate);
+    } else {
+      _payments[index] = payment;
+      _payments.sort(_sortByPaymentDate);
+    }
+    return savedRemotely;
+  }
+
+  Future<bool> deletePayment(String paymentId) async {
+    var deletedRemotely = false;
+    final firestore = _firestore;
+
+    if (firestore != null) {
+      try {
+        await firestore.collection('pagos').doc(paymentId).delete();
+        deletedRemotely = true;
+      } on FirebaseException {
+        deletedRemotely = false;
+      }
+    }
+
+    _payments = _payments
+        .where((payment) => payment.id != paymentId)
+        .toList(growable: true);
     return deletedRemotely;
   }
 
@@ -333,6 +609,44 @@ class FotogestRepository {
       note: _text(data, 'nota'),
     );
   }
+
+  static Future<void> _cacheSuccessfulCredentials(
+    String email,
+    String password,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_cachedEmailKey, _normalizeEmail(email));
+    await preferences.setString(
+      _cachedPasswordHashKey,
+      _credentialHash(email, password),
+    );
+  }
+
+  static Future<bool> _signInWithCachedCredentials(
+    String email,
+    String password,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final cachedEmail = preferences.getString(_cachedEmailKey);
+    final cachedHash = preferences.getString(_cachedPasswordHashKey);
+
+    if (cachedEmail == null || cachedHash == null) return false;
+    return cachedEmail == _normalizeEmail(email) &&
+        cachedHash == _credentialHash(email, password);
+  }
+
+  static String _credentialHash(String email, String password) {
+    final value = '${_normalizeEmail(email)}:${password.trim()}:fotogest_pro';
+    return sha256.convert(utf8.encode(value)).toString();
+  }
+
+  static bool _isConnectivityAuthError(String code) {
+    return code == 'network-request-failed' ||
+        code == 'unavailable' ||
+        code == 'deadline-exceeded';
+  }
+
+  static String _normalizeEmail(String email) => email.trim().toLowerCase();
 
   static String _text(
     Map<String, dynamic> data,

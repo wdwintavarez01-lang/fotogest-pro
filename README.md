@@ -3,9 +3,10 @@
 Sistema de gestion para fotografos de eventos.
 
 Aplicacion movil desarrollada en Flutter para organizar clientes, eventos,
-paquetes fotograficos y pagos. El flujo central permite iniciar sesion, consultar
-un resumen del negocio y ejecutar un CRUD completo de clientes conectado con
-Firebase Authentication y Cloud Firestore.
+servicios fotograficos y pagos. El flujo central permite iniciar sesion,
+consultar un resumen del negocio y ejecutar operaciones completas de clientes,
+servicios, eventos y cobros conectadas con Firebase Authentication y Cloud
+Firestore.
 
 ## Stack
 
@@ -14,7 +15,7 @@ Firebase Authentication y Cloud Firestore.
 - Arquitectura MVVM
 - Firebase Authentication
 - Cloud Firestore
-- Datos locales de respaldo para modo demo si Firebase no responde
+- Acceso offline con credenciales guardadas despues de un login exitoso
 
 ## Estructura
 
@@ -40,19 +41,21 @@ docs/semana_4/
 - Formulario de cliente para crear y editar
 - Eventos
 - Pagos
-- Paquetes fotograficos
+- Servicios fotograficos
 
 ## Funcionalidad principal
 
-CRUD completo de clientes:
+Flujo funcional principal:
 
-- Crear cliente.
-- Consultar lista de clientes.
-- Ver detalle de cliente.
-- Editar cliente.
-- Eliminar cliente con confirmacion.
+- Crear, consultar, editar y eliminar clientes sin eventos asociados.
+- Crear, consultar, editar y eliminar servicios fotograficos.
+- Crear, consultar, editar y eliminar eventos asociados a cliente y servicio.
+- Registrar, editar y eliminar pagos asociados a eventos.
+- Calcular abonado y pendiente desde los pagos registrados.
+- Entrar en modo offline usando credenciales guardadas previamente.
 
-La app tambien consulta eventos, pagos y paquetes desde el repositorio de datos.
+La base remota usa las colecciones `usuarios`, `clientes`, `paquetes`,
+`eventos` y `pagos`.
 
 ## Credenciales de prueba
 
@@ -62,7 +65,8 @@ Contrasena: 123456
 ```
 
 Estas credenciales deben existir en Firebase Authentication para probar el modo
-remoto. Si Firebase no responde, la app abre en modo demo local.
+Online. Si no hay internet, la app permite entrar con esas mismas credenciales
+solo si ya fueron usadas exitosamente antes en el dispositivo.
 
 ## Validacion local
 

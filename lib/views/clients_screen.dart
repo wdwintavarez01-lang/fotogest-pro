@@ -62,7 +62,7 @@ class ClientsScreen extends StatelessWidget {
                           IconButton(
                             tooltip: 'Eliminar',
                             icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _confirmDelete(context, client.id),
+                            onPressed: () => _confirmDelete(context, client),
                           ),
                         ],
                       ),
@@ -131,7 +131,7 @@ class ClientsScreen extends StatelessWidget {
                         label: const Text('Eliminar'),
                         onPressed: () {
                           Navigator.pop(context);
-                          _confirmDelete(context, client.id);
+                          _confirmDelete(context, client);
                         },
                       ),
                     ),
@@ -145,9 +145,20 @@ class ClientsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, String clientId) async {
+  Future<void> _confirmDelete(BuildContext context, Client client) async {
     final viewModel = AppScope.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    if (viewModel.hasEventsForClient(client.id)) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No puedes eliminar un cliente con eventos registrados.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -171,14 +182,14 @@ class ClientsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final deletedRemotely = await viewModel.deleteClient(clientId);
+    final deletedRemotely = await viewModel.deleteClient(client.id);
     if (!context.mounted) return;
 
     messenger.showSnackBar(
       SnackBar(
         content: Text(
           deletedRemotely
-              ? 'Cliente eliminado de Firebase'
+              ? 'Cliente eliminado Online'
               : 'Cliente eliminado en modo local',
         ),
       ),
