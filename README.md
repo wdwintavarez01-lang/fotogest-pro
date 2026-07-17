@@ -117,8 +117,5 @@ La base oficial seleccionada para el proyecto es Firebase Firestore. Los archivo
 - `database/firestore_seed_fotogest_pro.js`
 - `database/firestore.rules`
 
-La base real esta creada en Firebase:
+La base de datos esta creada en Firebase:
 
-```text
-https://console.firebase.google.com/project/app-fotografia-881ef/firestore/databases/-default-/data
-```
