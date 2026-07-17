@@ -68,8 +68,8 @@ La base remota usa las colecciones `usuarios`, `clientes`, `paquetes`,
 ## Credenciales de prueba
 
 ```text
-Correo: edwin.tavarez@example.com
-Contrasena: 123456
+Correo: test@uapa.com
+Contrasena: Uapa.202
 ```
 
 Estas credenciales deben existir en Firebase Authentication para probar el modo
