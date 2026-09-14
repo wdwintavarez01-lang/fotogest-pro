@@ -44,6 +44,7 @@ class EventsScreen extends StatelessWidget {
                   final package = viewModel.packageFor(event.packageId);
                   final paid = viewModel.paidForEvent(event.id);
                   final pending = viewModel.pendingForEvent(event.id);
+                  final total = viewModel.amountForEvent(event.id);
 
                   return Card(
                     child: Padding(
@@ -73,7 +74,7 @@ class EventsScreen extends StatelessWidget {
                           Text(event.location),
                           const Divider(height: 22),
                           Text('Servicio: ${package.name}'),
-                          Text('Total: ${Formatters.money(package.price)}'),
+                          Text('Total: ${Formatters.money(total)}'),
                           Text('Abonado: ${Formatters.money(paid)}'),
                           Text('Pendiente: ${Formatters.money(pending)}'),
                           const SizedBox(height: 12),

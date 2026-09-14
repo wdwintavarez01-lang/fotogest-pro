@@ -8,6 +8,7 @@ import '../widgets/metric_tile.dart';
 import '../widgets/status_chip.dart';
 import 'clients_screen.dart';
 import 'events_screen.dart';
+import 'login_screen.dart';
 import 'packages_screen.dart';
 import 'payments_screen.dart';
 import 'sales_screen.dart';
@@ -34,6 +35,11 @@ class DashboardScreen extends StatelessWidget {
             icon: const Icon(Icons.inventory_2_outlined),
             onPressed: () =>
                 Navigator.pushNamed(context, PackagesScreen.routeName),
+          ),
+          IconButton(
+            tooltip: 'Cerrar sesion',
+            icon: const Icon(Icons.logout_outlined),
+            onPressed: () => _confirmSignOut(context),
           ),
         ],
       ),
@@ -214,5 +220,41 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Pide confirmacion antes de cerrar la sesion y, al aceptar, limpia el
+  /// estado de la aplicacion y regresa a la pantalla de acceso.
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final viewModel = AppScope.of(context);
+    final navigator = Navigator.of(context);
+    final account = viewModel.currentUserEmail;
+
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cerrar sesion'),
+        content: Text(
+          account.isEmpty
+              ? 'Se cerrara la sesion actual y volveras a la pantalla de acceso.'
+              : 'Se cerrara la sesion de $account y volveras a la pantalla de '
+                    'acceso.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cerrar sesion'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut != true) return;
+
+    await viewModel.signOut();
+    navigator.pushNamedAndRemoveUntil(LoginScreen.routeName, (route) => false);
   }
 }

@@ -1,35 +1,116 @@
 rules_version = '2';
 
+// Reglas de seguridad de FotoGest Pro.
+//
+// Principio aplicado: cada usuario autenticado accede unicamente a los
+// documentos cuyo campo `usuarioId` coincide con su propio identificador de
+// Firebase Authentication. Un usuario no puede leer, modificar ni eliminar la
+// informacion de otro negocio, y tampoco puede crear un documento a nombre de
+// otro usuario.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
+
+    // ----------------------------------------------------------------
+    // Funciones auxiliares
+    // ----------------------------------------------------------------
+
+    function autenticado() {
       return request.auth != null;
     }
 
-    match /usuarios/{usuarioId} {
-      allow read: if signedIn();
-      allow write: if signedIn();
+    // El documento que ya existe pertenece al usuario que hace la peticion.
+    function esPropietario() {
+      return autenticado() && resource.data.usuarioId == request.auth.uid;
     }
+
+    // El documento que se quiere escribir queda a nombre del propio usuario.
+    function seGuardaComoPropio() {
+      return autenticado()
+        && request.resource.data.usuarioId == request.auth.uid;
+    }
+
+    function montoValido(campo) {
+      return request.resource.data[campo] is number
+        && request.resource.data[campo] >= 0;
+    }
+
+    // ----------------------------------------------------------------
+    // usuarios
+    // Cada persona solo puede leer y escribir su propio perfil. El
+    // identificador del documento debe ser su UID de Authentication.
+    // ----------------------------------------------------------------
+
+    match /usuarios/{usuarioId} {
+      allow read, write: if autenticado() && request.auth.uid == usuarioId;
+    }
+
+    // ----------------------------------------------------------------
+    // clientes
+    // ----------------------------------------------------------------
 
     match /clientes/{clienteId} {
-      allow read, write: if signedIn();
+      allow read, delete: if esPropietario();
+      allow create: if seGuardaComoPropio()
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() >= 3;
+      allow update: if esPropietario() && seGuardaComoPropio();
     }
+
+    // ----------------------------------------------------------------
+    // paquetes (servicios fotograficos)
+    // ----------------------------------------------------------------
 
     match /paquetes/{paqueteId} {
-      allow read: if signedIn();
-      allow write: if signedIn();
+      allow read, delete: if esPropietario();
+      allow create: if seGuardaComoPropio() && montoValido('precio');
+      allow update: if esPropietario()
+        && seGuardaComoPropio()
+        && montoValido('precio');
     }
+
+    // ----------------------------------------------------------------
+    // eventos
+    // ----------------------------------------------------------------
 
     match /eventos/{eventoId} {
-      allow read, write: if signedIn();
+      allow read, delete: if esPropietario();
+      allow create: if seGuardaComoPropio() && montoValido('montoAcordado');
+      allow update: if esPropietario()
+        && seGuardaComoPropio()
+        && montoValido('montoAcordado');
     }
+
+    // ----------------------------------------------------------------
+    // ventas independientes
+    // ----------------------------------------------------------------
 
     match /ventas/{ventaId} {
-      allow read, write: if signedIn();
+      allow read, delete: if esPropietario();
+      allow create: if seGuardaComoPropio() && montoValido('total');
+      allow update: if esPropietario()
+        && seGuardaComoPropio()
+        && montoValido('total');
     }
 
+    // ----------------------------------------------------------------
+    // pagos (abonos)
+    // ----------------------------------------------------------------
+
     match /pagos/{pagoId} {
-      allow read, write: if signedIn();
+      allow read, delete: if esPropietario();
+      allow create: if seGuardaComoPropio() && montoValido('monto');
+      allow update: if esPropietario()
+        && seGuardaComoPropio()
+        && montoValido('monto');
+    }
+
+    // ----------------------------------------------------------------
+    // Cualquier otra ruta queda bloqueada de forma explicita.
+    // ----------------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

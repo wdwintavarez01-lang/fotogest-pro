@@ -147,14 +147,15 @@ class _PendingEventCard extends StatelessWidget {
     final service = viewModel.packageFor(event.packageId);
     final paid = viewModel.paidForEvent(event.id);
     final pending = viewModel.pendingForEvent(event.id);
-    final progress = service.price <= 0 ? 0.0 : paid / service.price;
+    final total = viewModel.amountForEvent(event.id);
+    final progress = total <= 0 ? 0.0 : paid / total;
 
     return _PendingCard(
       icon: Icons.event_note_outlined,
       title: client.name,
       subtitle: '${event.type} - ${service.name}',
       detail: Formatters.date(event.dateTime),
-      total: service.price,
+      total: total,
       paid: paid,
       pending: pending,
       progress: progress,
@@ -301,7 +302,7 @@ class _PaidEventCard extends StatelessWidget {
       icon: Icons.event_available_outlined,
       title: client.name,
       subtitle: '${event.type} - ${service.name}',
-      amount: service.price,
+      amount: viewModel.amountForEvent(event.id),
       paidAt: lastPayment?.paidAt,
       payments: payments,
     );

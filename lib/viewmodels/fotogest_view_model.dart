@@ -29,6 +29,12 @@ class FotogestViewModel extends ChangeNotifier {
   List<PhotoSale> get sales => _repository.getSales();
   List<Payment> get payments => _repository.getPayments();
 
+  /// Identificador del usuario autenticado dueño de los registros.
+  String get currentUserId => _repository.currentUserId;
+
+  /// Correo del usuario autenticado, usado en la pantalla de resumen.
+  String get currentUserEmail => _repository.currentUserEmail;
+
   String get connectionLabel {
     if (isLoading) return 'Cargando';
     if (remoteDataLoaded && !offlineSession) return 'Online';
@@ -50,16 +56,11 @@ class FotogestViewModel extends ChangeNotifier {
     double total = 0;
     for (final event in events) {
       if (event.status == 'cancelado') continue;
-      final package = packageFor(event.packageId);
-      final paid = paymentsForEvent(
-        event.id,
-      ).fold<double>(0, (sum, payment) => sum + payment.amount);
-      total += (package.price - paid).clamp(0, package.price).toDouble();
+      total += pendingForEvent(event.id);
     }
     for (final sale in sales) {
       if (sale.status == 'cancelado') continue;
-      final paid = paidForSale(sale.id);
-      total += (sale.total - paid).clamp(0, sale.total).toDouble();
+      total += pendingForSale(sale.id);
     }
     return total;
   }
@@ -69,7 +70,7 @@ class FotogestViewModel extends ChangeNotifier {
       (client) => client.id == id,
       orElse: () => Client(
         id: id,
-        userId: 'usr_001',
+        userId: currentUserId,
         name: 'Cliente no encontrado',
         phone: 'Sin telefono',
         notes: 'El registro relacionado no existe en la base de datos.',
@@ -84,7 +85,7 @@ class FotogestViewModel extends ChangeNotifier {
         id: id,
         clientId: '',
         packageId: '',
-        userId: 'usr_001',
+        userId: currentUserId,
         type: 'Evento no encontrado',
         dateTime: DateTime.now(),
         location: 'Sin ubicacion',
@@ -98,8 +99,9 @@ class FotogestViewModel extends ChangeNotifier {
       (package) => package.id == id,
       orElse: () => PhotoPackage(
         id: id,
-        name: 'Paquete no encontrado',
-        description: 'El paquete relacionado no existe en la base de datos.',
+        userId: currentUserId,
+        name: 'Servicio no encontrado',
+        description: 'El servicio relacionado no existe en la base de datos.',
         price: 0,
         active: false,
       ),
@@ -112,7 +114,7 @@ class FotogestViewModel extends ChangeNotifier {
       orElse: () => PhotoSale(
         id: id,
         clientId: '',
-        userId: 'usr_001',
+        userId: currentUserId,
         type: 'otro',
         description: 'Venta no encontrada',
         quantity: 1,
@@ -121,6 +123,17 @@ class FotogestViewModel extends ChangeNotifier {
         status: 'pendiente',
       ),
     );
+  }
+
+  /// Monto total que debe cobrarse por un evento.
+  ///
+  /// Se usa el monto acordado guardado dentro del evento. Los eventos creados
+  /// antes de que existiera ese campo se resuelven con el precio actual del
+  /// servicio, para no perder su saldo.
+  double amountForEvent(String eventId) {
+    final event = eventFor(eventId);
+    if (event.agreedAmount > 0) return event.agreedAmount;
+    return packageFor(event.packageId).price;
   }
 
   List<Payment> paymentsForEvent(String eventId) {
@@ -147,9 +160,8 @@ class FotogestViewModel extends ChangeNotifier {
 
   List<PhotoEvent> get paidEvents {
     final paid = events.where((event) {
-      final package = packageFor(event.packageId);
       return event.status != 'cancelado' &&
-          package.price > 0 &&
+          amountForEvent(event.id) > 0 &&
           pendingForEvent(event.id) <= 0;
     }).toList();
     paid.sort((left, right) {
@@ -203,9 +215,9 @@ class FotogestViewModel extends ChangeNotifier {
   double pendingForEvent(String eventId) {
     final event = eventFor(eventId);
     if (event.status == 'cancelado') return 0;
-    final package = packageFor(event.packageId);
+    final amount = amountForEvent(eventId);
     final paid = paidForEvent(eventId);
-    return (package.price - paid).clamp(0, package.price).toDouble();
+    return (amount - paid).clamp(0, amount).toDouble();
   }
 
   double pendingForSale(String saleId) {
@@ -241,8 +253,12 @@ class FotogestViewModel extends ChangeNotifier {
     return events.any((event) => event.packageId == packageId);
   }
 
+  // ---------------------------------------------------------------------
+  // Sesion y carga
+  // ---------------------------------------------------------------------
+
   Future<bool> loadRemoteData() async {
-    if (!_repository.hasFirebase) return false;
+    if (!_repository.hasFirebase || !_repository.hasSession) return false;
 
     isLoading = true;
     notifyListeners();
@@ -251,7 +267,7 @@ class FotogestViewModel extends ChangeNotifier {
       remoteDataLoaded = await _repository.loadRemoteData();
       connectionMessage = remoteDataLoaded
           ? 'Datos cargados en modo Online'
-          : 'Usando datos locales del prototipo';
+          : 'No se pudo leer la base de datos.';
       return remoteDataLoaded;
     } catch (_) {
       remoteDataLoaded = false;
@@ -288,6 +304,21 @@ class FotogestViewModel extends ChangeNotifier {
     }
   }
 
+  /// Cierra la sesion y limpia el estado para que el proximo usuario no vea
+  /// informacion del anterior.
+  Future<void> signOut() async {
+    await _repository.signOut();
+    remoteDataLoaded = false;
+    offlineSession = false;
+    isLoading = false;
+    connectionMessage = null;
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------
+  // Clientes
+  // ---------------------------------------------------------------------
+
   Future<bool> addClient({
     required String name,
     required String phone,
@@ -297,7 +328,7 @@ class FotogestViewModel extends ChangeNotifier {
     final savedRemotely = await _repository.addClient(
       Client(
         id: 'cli_$timestamp',
-        userId: 'usr_001',
+        userId: currentUserId,
         name: name.trim(),
         phone: phone.trim(),
         notes: notes.trim(),
@@ -315,6 +346,7 @@ class FotogestViewModel extends ChangeNotifier {
   }) async {
     final savedRemotely = await _repository.updateClient(
       client.copyWith(
+        userId: client.userId.isEmpty ? currentUserId : client.userId,
         name: name.trim(),
         phone: phone.trim(),
         notes: notes.trim(),
@@ -330,6 +362,10 @@ class FotogestViewModel extends ChangeNotifier {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Servicios fotograficos
+  // ---------------------------------------------------------------------
+
   Future<bool> addPackage({
     required String name,
     required String description,
@@ -340,6 +376,7 @@ class FotogestViewModel extends ChangeNotifier {
     final savedRemotely = await _repository.addPackage(
       PhotoPackage(
         id: 'paq_$timestamp',
+        userId: currentUserId,
         name: name.trim(),
         description: description.trim(),
         price: price,
@@ -359,6 +396,7 @@ class FotogestViewModel extends ChangeNotifier {
   }) async {
     final savedRemotely = await _repository.updatePackage(
       package.copyWith(
+        userId: package.userId.isEmpty ? currentUserId : package.userId,
         name: name.trim(),
         description: description.trim(),
         price: price,
@@ -375,6 +413,10 @@ class FotogestViewModel extends ChangeNotifier {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Eventos
+  // ---------------------------------------------------------------------
+
   Future<bool> addEvent({
     required String clientId,
     required String packageId,
@@ -382,6 +424,7 @@ class FotogestViewModel extends ChangeNotifier {
     required DateTime dateTime,
     required String location,
     required String status,
+    required double agreedAmount,
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final savedRemotely = await _repository.addEvent(
@@ -389,11 +432,12 @@ class FotogestViewModel extends ChangeNotifier {
         id: 'evt_$timestamp',
         clientId: clientId,
         packageId: packageId,
-        userId: 'usr_001',
+        userId: currentUserId,
         type: type.trim(),
         dateTime: dateTime,
         location: location.trim(),
         status: status,
+        agreedAmount: agreedAmount,
       ),
     );
     notifyListeners();
@@ -408,15 +452,18 @@ class FotogestViewModel extends ChangeNotifier {
     required DateTime dateTime,
     required String location,
     required String status,
+    required double agreedAmount,
   }) async {
     final savedRemotely = await _repository.updateEvent(
       event.copyWith(
+        userId: event.userId.isEmpty ? currentUserId : event.userId,
         clientId: clientId,
         packageId: packageId,
         type: type.trim(),
         dateTime: dateTime,
         location: location.trim(),
         status: status,
+        agreedAmount: agreedAmount,
       ),
     );
     notifyListeners();
@@ -428,6 +475,10 @@ class FotogestViewModel extends ChangeNotifier {
     notifyListeners();
     return deletedRemotely;
   }
+
+  // ---------------------------------------------------------------------
+  // Ventas independientes
+  // ---------------------------------------------------------------------
 
   Future<SaleSaveResult> addSale({
     required String clientId,
@@ -443,7 +494,7 @@ class FotogestViewModel extends ChangeNotifier {
     final sale = PhotoSale(
       id: 'ven_$timestamp',
       clientId: clientId,
-      userId: 'usr_001',
+      userId: currentUserId,
       type: type,
       description: description.trim(),
       quantity: quantity,
@@ -469,6 +520,7 @@ class FotogestViewModel extends ChangeNotifier {
     String notes = '',
   }) async {
     final updatedSale = sale.copyWith(
+      userId: sale.userId.isEmpty ? currentUserId : sale.userId,
       clientId: clientId,
       type: type,
       description: description.trim(),
@@ -489,6 +541,10 @@ class FotogestViewModel extends ChangeNotifier {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Pagos
+  // ---------------------------------------------------------------------
+
   Future<bool> addPayment({
     String eventId = '',
     String saleId = '',
@@ -503,6 +559,7 @@ class FotogestViewModel extends ChangeNotifier {
         id: 'pag_$timestamp',
         eventId: eventId,
         saleId: saleId,
+        userId: currentUserId,
         amount: amount,
         method: method,
         paidAt: paidAt,
@@ -524,6 +581,7 @@ class FotogestViewModel extends ChangeNotifier {
   }) async {
     final savedRemotely = await _repository.updatePayment(
       payment.copyWith(
+        userId: payment.userId.isEmpty ? currentUserId : payment.userId,
         eventId: eventId,
         saleId: saleId,
         amount: amount,

@@ -12,6 +12,11 @@ import '../models/photo_event.dart';
 import '../models/photo_package.dart';
 import '../models/photo_sale.dart';
 
+/// Punto unico de acceso a los datos de la aplicacion.
+///
+/// Todas las lecturas y escrituras se realizan contra Cloud Firestore y se
+/// filtran por el identificador del usuario autenticado, de modo que cada
+/// usuario trabaja unicamente con la informacion de su propio negocio.
 class FotogestRepository {
   FotogestRepository() : _firestore = null, _auth = null;
 
@@ -31,167 +36,26 @@ class FotogestRepository {
   static const _cachedEmailKey = 'fotogest_cached_email';
   static const _cachedPasswordHashKey = 'fotogest_cached_password_hash';
 
-  List<AppUser> _users = const [
-    AppUser(
-      id: 'usr_001',
-      name: 'Edwin Tavarez',
-      email: 'edwin.tavarez@example.com',
-      role: 'fotografo',
-      active: true,
-    ),
-    AppUser(
-      id: 'usr_002',
-      name: 'Asistente Demo',
-      email: 'asistente@example.com',
-      role: 'asistente',
-      active: true,
-    ),
-    AppUser(
-      id: 'usr_003',
-      name: 'Admin FotoGest',
-      email: 'admin@example.com',
-      role: 'administrador',
-      active: true,
-    ),
-  ];
-
-  List<Client> _clients = [
-    const Client(
-      id: 'cli_001',
-      userId: 'usr_001',
-      name: 'Maria Fernandez',
-      phone: '809-555-1101',
-      notes: 'Prefiere contacto por WhatsApp',
-    ),
-    const Client(
-      id: 'cli_002',
-      userId: 'usr_001',
-      name: 'Jose Ramirez',
-      phone: '809-555-2202',
-      notes: 'Solicita album impreso',
-    ),
-    const Client(
-      id: 'cli_003',
-      userId: 'usr_001',
-      name: 'Laura Gomez',
-      phone: '809-555-3303',
-      notes: 'Evento en iglesia y recepcion',
-    ),
-  ];
-
-  List<PhotoPackage> _packages = const [
-    PhotoPackage(
-      id: 'paq_001',
-      name: 'Basico Evento',
-      description: '20 fotos editadas y entrega digital',
-      price: 3500,
-      active: true,
-    ),
-    PhotoPackage(
-      id: 'paq_002',
-      name: 'Premium Familiar',
-      description: '40 fotos editadas, album digital y 5 impresas',
-      price: 6500,
-      active: true,
-    ),
-    PhotoPackage(
-      id: 'paq_003',
-      name: 'Cobertura Completa',
-      description: '80 fotos editadas, album impreso y entrega express',
-      price: 12000,
-      active: true,
-    ),
-  ];
-
-  List<PhotoEvent> _events = [
-    PhotoEvent(
-      id: 'evt_001',
-      clientId: 'cli_001',
-      packageId: 'paq_002',
-      userId: 'usr_001',
-      type: 'Bautizo',
-      dateTime: DateTime(2026, 7, 5, 15),
-      location: 'Parroquia San Judas',
-      status: 'programado',
-    ),
-    PhotoEvent(
-      id: 'evt_002',
-      clientId: 'cli_002',
-      packageId: 'paq_001',
-      userId: 'usr_001',
-      type: 'Cumpleanos',
-      dateTime: DateTime(2026, 7, 6, 18),
-      location: 'Salon Vista Alegre',
-      status: 'en_proceso',
-    ),
-    PhotoEvent(
-      id: 'evt_003',
-      clientId: 'cli_003',
-      packageId: 'paq_003',
-      userId: 'usr_001',
-      type: 'Boda',
-      dateTime: DateTime(2026, 7, 12, 16, 30),
-      location: 'Santiago Centro',
-      status: 'programado',
-    ),
-  ];
-
-  List<PhotoSale> _sales = [
-    PhotoSale(
-      id: 'ven_001',
-      clientId: 'cli_001',
-      userId: 'usr_001',
-      type: 'foto_individual',
-      description: 'Foto digital editada para perfil profesional',
-      quantity: 3,
-      unitPrice: 450,
-      soldAt: DateTime(2026, 7, 3, 10),
-      status: 'pendiente',
-      notes: 'Entrega por WhatsApp',
-    ),
-    PhotoSale(
-      id: 'ven_002',
-      clientId: 'cli_002',
-      userId: 'usr_001',
-      type: 'impresion',
-      description: 'Impresion 8x10 con retoque basico',
-      quantity: 2,
-      unitPrice: 650,
-      soldAt: DateTime(2026, 7, 4, 11, 30),
-      status: 'pendiente',
-      notes: 'Recoger en estudio',
-    ),
-  ];
-
-  List<Payment> _payments = [
-    Payment(
-      id: 'pag_001',
-      eventId: 'evt_001',
-      amount: 3000,
-      method: 'transferencia',
-      paidAt: DateTime(2026, 7, 1, 12),
-      note: 'Abono inicial',
-    ),
-    Payment(
-      id: 'pag_002',
-      eventId: 'evt_002',
-      amount: 1500,
-      method: 'efectivo',
-      paidAt: DateTime(2026, 7, 1, 12, 10),
-      note: 'Reserva de fecha',
-    ),
-    Payment(
-      id: 'pag_003',
-      eventId: 'evt_003',
-      amount: 5000,
-      method: 'transferencia',
-      paidAt: DateTime(2026, 7, 1, 12, 20),
-      note: 'Separacion de paquete premium',
-    ),
-  ];
+  // Las listas inician vacias. La informacion proviene siempre de Firestore y,
+  // cuando no hay conexion, se resuelve desde la cache local habilitada en
+  // FirebaseService. No se cargan datos de ejemplo escritos en el codigo.
+  List<AppUser> _users = [];
+  List<Client> _clients = [];
+  List<PhotoPackage> _packages = [];
+  List<PhotoEvent> _events = [];
+  List<PhotoSale> _sales = [];
+  List<Payment> _payments = [];
 
   bool get hasFirebase => _firestore != null;
   bool get lastSignInWasOffline => _lastSignInWasOffline;
+
+  /// Identificador del usuario autenticado. Cadena vacia si no hay sesion.
+  String get currentUserId => _auth?.currentUser?.uid ?? '';
+
+  /// Correo del usuario autenticado. Cadena vacia si no hay sesion.
+  String get currentUserEmail => _auth?.currentUser?.email ?? '';
+
+  bool get hasSession => currentUserId.isNotEmpty;
 
   List<AppUser> getUsers() => List.unmodifiable(_users);
   List<Client> getClients() => List.unmodifiable(_clients);
@@ -199,6 +63,10 @@ class FotogestRepository {
   List<PhotoPackage> getPackages() => List.unmodifiable(_packages);
   List<PhotoSale> getSales() => List.unmodifiable(_sales);
   List<Payment> getPayments() => List.unmodifiable(_payments);
+
+  // ---------------------------------------------------------------------
+  // Sesion
+  // ---------------------------------------------------------------------
 
   Future<bool> signIn(String email, String password) async {
     final auth = _auth;
@@ -231,27 +99,123 @@ class FotogestRepository {
     }
   }
 
+  /// Cierra la sesion activa y descarta la informacion cargada en memoria.
+  Future<void> signOut() async {
+    try {
+      await _auth?.signOut();
+    } on FirebaseException {
+      // Sin conexion la sesion local se cierra igualmente al limpiar el estado.
+    }
+    clearLocalData();
+    _lastSignInWasOffline = false;
+  }
+
+  void clearLocalData() {
+    _users = [];
+    _clients = [];
+    _packages = [];
+    _events = [];
+    _sales = [];
+    _payments = [];
+  }
+
+  // ---------------------------------------------------------------------
+  // Carga de datos
+  // ---------------------------------------------------------------------
+
   Future<bool> loadRemoteData() async {
     final firestore = _firestore;
-    if (firestore == null) return false;
+    final userId = currentUserId;
+    if (firestore == null || userId.isEmpty) return false;
 
-    final users = await firestore.collection('usuarios').get();
-    final clients = await firestore.collection('clientes').get();
-    final packages = await firestore.collection('paquetes').get();
-    final events = await firestore.collection('eventos').get();
-    final payments = await firestore.collection('pagos').get();
+    await _ensureUserDocument(firestore, userId);
 
-    _users = users.docs.map(_userFromDoc).toList()..sort(_sortByUserId);
+    final clients = await _ownedQuery(firestore, 'clientes', userId).get();
+    final packages = await _ownedQuery(firestore, 'paquetes', userId).get();
+    final events = await _ownedQuery(firestore, 'eventos', userId).get();
+    final payments = await _ownedQuery(firestore, 'pagos', userId).get();
+
     _clients = clients.docs.map(_clientFromDoc).toList()..sort(_sortByClientId);
     _packages = packages.docs.map(_packageFromDoc).toList()
       ..sort(_sortByPackageId);
     _events = events.docs.map(_eventFromDoc).toList()..sort(_sortByEventDate);
     _payments = payments.docs.map(_paymentFromDoc).toList()
       ..sort(_sortByPaymentDate);
-    await _loadSalesIfAvailable(firestore);
+    await _loadSalesIfAvailable(firestore, userId);
 
     return true;
   }
+
+  Query<Map<String, dynamic>> _ownedQuery(
+    FirebaseFirestore firestore,
+    String collection,
+    String userId,
+  ) {
+    return firestore
+        .collection(collection)
+        .where('usuarioId', isEqualTo: userId);
+  }
+
+  /// Crea o lee el documento del usuario autenticado en la coleccion
+  /// `usuarios`. Se ejecuta en cada carga para que la cuenta quede registrada
+  /// la primera vez que el usuario entra a la aplicacion.
+  Future<void> _ensureUserDocument(
+    FirebaseFirestore firestore,
+    String userId,
+  ) async {
+    try {
+      final reference = firestore.collection('usuarios').doc(userId);
+      final snapshot = await reference.get();
+
+      if (!snapshot.exists) {
+        await reference.set({
+          'usuarioId': userId,
+          'nombre': _auth?.currentUser?.displayName ?? currentUserEmail,
+          'email': currentUserEmail,
+          'rol': 'fotografo',
+          'activo': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      final data = snapshot.data() ?? const <String, dynamic>{};
+      _users = [
+        AppUser(
+          id: userId,
+          name: _text(data, 'nombre', currentUserEmail),
+          email: _text(data, 'email', currentUserEmail),
+          role: _text(data, 'rol', 'fotografo'),
+          active: _bool(data, 'activo', true),
+        ),
+      ];
+    } on FirebaseException {
+      _users = [
+        AppUser(
+          id: userId,
+          name: currentUserEmail,
+          email: currentUserEmail,
+          role: 'fotografo',
+          active: true,
+        ),
+      ];
+    }
+  }
+
+  Future<void> _loadSalesIfAvailable(
+    FirebaseFirestore firestore,
+    String userId,
+  ) async {
+    try {
+      final sales = await _ownedQuery(firestore, 'ventas', userId).get();
+      _sales = sales.docs.map(_saleFromDoc).toList()..sort(_sortBySaleDate);
+    } on FirebaseException {
+      return;
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Clientes
+  // ---------------------------------------------------------------------
 
   Future<bool> addClient(Client client) async {
     var savedRemotely = false;
@@ -326,6 +290,10 @@ class FotogestRepository {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Servicios fotograficos
+  // ---------------------------------------------------------------------
+
   Future<bool> addPackage(PhotoPackage package) async {
     var savedRemotely = false;
     final firestore = _firestore;
@@ -334,6 +302,7 @@ class FotogestRepository {
       try {
         await firestore.collection('paquetes').doc(package.id).set({
           'paqueteId': package.id,
+          'usuarioId': package.userId,
           'nombre': package.name,
           'descripcion': package.description,
           'precio': package.price,
@@ -359,6 +328,7 @@ class FotogestRepository {
       try {
         await firestore.collection('paquetes').doc(package.id).set({
           'paqueteId': package.id,
+          'usuarioId': package.userId,
           'nombre': package.name,
           'descripcion': package.description,
           'precio': package.price,
@@ -401,6 +371,10 @@ class FotogestRepository {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Eventos
+  // ---------------------------------------------------------------------
+
   Future<bool> addEvent(PhotoEvent event) async {
     var savedRemotely = false;
     final firestore = _firestore;
@@ -416,6 +390,7 @@ class FotogestRepository {
           'fechaHora': Timestamp.fromDate(event.dateTime),
           'ubicacion': event.location,
           'estado': event.status,
+          'montoAcordado': event.agreedAmount,
           'createdAt': FieldValue.serverTimestamp(),
         });
         savedRemotely = true;
@@ -444,6 +419,7 @@ class FotogestRepository {
           'fechaHora': Timestamp.fromDate(event.dateTime),
           'ubicacion': event.location,
           'estado': event.status,
+          'montoAcordado': event.agreedAmount,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
         savedRemotely = true;
@@ -494,6 +470,10 @@ class FotogestRepository {
         .toList(growable: true);
     return deletedRemotely;
   }
+
+  // ---------------------------------------------------------------------
+  // Ventas independientes
+  // ---------------------------------------------------------------------
 
   Future<bool> addSale(PhotoSale sale) async {
     var savedRemotely = false;
@@ -593,6 +573,10 @@ class FotogestRepository {
     return deletedRemotely;
   }
 
+  // ---------------------------------------------------------------------
+  // Pagos
+  // ---------------------------------------------------------------------
+
   Future<bool> addPayment(Payment payment) async {
     var savedRemotely = false;
     final firestore = _firestore;
@@ -603,6 +587,7 @@ class FotogestRepository {
           'pagoId': payment.id,
           'eventoId': payment.eventId,
           'ventaId': payment.saleId,
+          'usuarioId': payment.userId,
           'monto': payment.amount,
           'metodo': payment.method,
           'fechaPago': Timestamp.fromDate(payment.paidAt),
@@ -630,6 +615,7 @@ class FotogestRepository {
           'pagoId': payment.id,
           'eventoId': payment.eventId,
           'ventaId': payment.saleId,
+          'usuarioId': payment.userId,
           'monto': payment.amount,
           'metodo': payment.method,
           'fechaPago': Timestamp.fromDate(payment.paidAt),
@@ -673,16 +659,9 @@ class FotogestRepository {
     return deletedRemotely;
   }
 
-  static AppUser _userFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
-    return AppUser(
-      id: _text(data, 'usuarioId', doc.id),
-      name: _text(data, 'nombre'),
-      email: _text(data, 'email'),
-      role: _text(data, 'rol'),
-      active: _bool(data, 'activo', true),
-    );
-  }
+  // ---------------------------------------------------------------------
+  // Conversion de documentos
+  // ---------------------------------------------------------------------
 
   static Client _clientFromDoc(
     QueryDocumentSnapshot<Map<String, dynamic>> doc,
@@ -690,7 +669,7 @@ class FotogestRepository {
     final data = doc.data();
     return Client(
       id: _text(data, 'clienteId', doc.id),
-      userId: _text(data, 'usuarioId', 'usr_001'),
+      userId: _text(data, 'usuarioId'),
       name: _text(data, 'nombre'),
       phone: _text(data, 'telefono'),
       notes: _text(data, 'notas'),
@@ -703,6 +682,7 @@ class FotogestRepository {
     final data = doc.data();
     return PhotoPackage(
       id: _text(data, 'paqueteId', doc.id),
+      userId: _text(data, 'usuarioId'),
       name: _text(data, 'nombre'),
       description: _text(data, 'descripcion'),
       price: _number(data, 'precio'),
@@ -718,11 +698,12 @@ class FotogestRepository {
       id: _text(data, 'eventoId', doc.id),
       clientId: _text(data, 'clienteId'),
       packageId: _text(data, 'paqueteId'),
-      userId: _text(data, 'usuarioId', 'usr_001'),
+      userId: _text(data, 'usuarioId'),
       type: _text(data, 'tipo'),
       dateTime: _date(data, 'fechaHora'),
       location: _text(data, 'ubicacion'),
       status: _text(data, 'estado'),
+      agreedAmount: _number(data, 'montoAcordado'),
     );
   }
 
@@ -734,6 +715,7 @@ class FotogestRepository {
       id: _text(data, 'pagoId', doc.id),
       eventId: _text(data, 'eventoId'),
       saleId: _text(data, 'ventaId'),
+      userId: _text(data, 'usuarioId'),
       amount: _number(data, 'monto'),
       method: _text(data, 'metodo'),
       paidAt: _date(data, 'fechaPago'),
@@ -748,7 +730,7 @@ class FotogestRepository {
     return PhotoSale(
       id: _text(data, 'ventaId', doc.id),
       clientId: _text(data, 'clienteId'),
-      userId: _text(data, 'usuarioId', 'usr_001'),
+      userId: _text(data, 'usuarioId'),
       type: _text(data, 'tipo', 'foto_individual'),
       description: _text(data, 'descripcion'),
       quantity: _int(data, 'cantidad', 1),
@@ -759,14 +741,9 @@ class FotogestRepository {
     );
   }
 
-  Future<void> _loadSalesIfAvailable(FirebaseFirestore firestore) async {
-    try {
-      final sales = await firestore.collection('ventas').get();
-      _sales = sales.docs.map(_saleFromDoc).toList()..sort(_sortBySaleDate);
-    } on FirebaseException {
-      return;
-    }
-  }
+  // ---------------------------------------------------------------------
+  // Credenciales guardadas para el acceso sin conexion
+  // ---------------------------------------------------------------------
 
   static Future<void> _cacheSuccessfulCredentials(
     String email,
@@ -805,6 +782,10 @@ class FotogestRepository {
   }
 
   static String _normalizeEmail(String email) => email.trim().toLowerCase();
+
+  // ---------------------------------------------------------------------
+  // Utilidades de lectura y ordenamiento
+  // ---------------------------------------------------------------------
 
   static String _text(
     Map<String, dynamic> data,
@@ -846,10 +827,6 @@ class FotogestRepository {
     if (value is Timestamp) return value.toDate();
     if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
     return DateTime.now();
-  }
-
-  static int _sortByUserId(AppUser left, AppUser right) {
-    return left.id.compareTo(right.id);
   }
 
   static int _sortByClientId(Client left, Client right) {

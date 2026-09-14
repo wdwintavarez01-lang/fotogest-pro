@@ -8,6 +8,7 @@ class PhotoEvent {
     required this.dateTime,
     required this.location,
     required this.status,
+    this.agreedAmount = 0,
   });
 
   final String id;
@@ -19,6 +20,14 @@ class PhotoEvent {
   final String location;
   final String status;
 
+  /// Monto acordado con el cliente al momento de registrar el evento.
+  ///
+  /// Se guarda dentro del evento para que un cambio posterior en el precio del
+  /// servicio no altere la deuda de eventos ya registrados. Un valor en cero
+  /// corresponde a eventos creados antes de esta version; en ese caso el
+  /// calculo cae de vuelta al precio actual del servicio.
+  final double agreedAmount;
+
   PhotoEvent copyWith({
     String? id,
     String? clientId,
@@ -28,6 +37,7 @@ class PhotoEvent {
     DateTime? dateTime,
     String? location,
     String? status,
+    double? agreedAmount,
   }) {
     return PhotoEvent(
       id: id ?? this.id,
@@ -38,6 +48,7 @@ class PhotoEvent {
       dateTime: dateTime ?? this.dateTime,
       location: location ?? this.location,
       status: status ?? this.status,
+      agreedAmount: agreedAmount ?? this.agreedAmount,
     );
   }
 }

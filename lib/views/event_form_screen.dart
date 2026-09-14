@@ -20,6 +20,7 @@ class _EventFormScreenState extends State<EventFormScreen> {
   final formKey = GlobalKey<FormState>();
   final typeController = TextEditingController();
   final locationController = TextEditingController();
+  final agreedAmountController = TextEditingController();
   PhotoEvent? event;
   String? selectedClientId;
   String? selectedPackageId;
@@ -39,6 +40,7 @@ class _EventFormScreenState extends State<EventFormScreen> {
   void dispose() {
     typeController.dispose();
     locationController.dispose();
+    agreedAmountController.dispose();
     super.dispose();
   }
 
@@ -59,6 +61,12 @@ class _EventFormScreenState extends State<EventFormScreen> {
         locationController.text = arguments.location;
         status = arguments.status;
         selectedDateTime = arguments.dateTime;
+        // Los eventos creados antes de esta version no tienen monto acordado;
+        // en ese caso se propone el precio actual del servicio.
+        final storedAmount = arguments.agreedAmount > 0
+            ? arguments.agreedAmount
+            : viewModel.packageFor(arguments.packageId).price;
+        agreedAmountController.text = _amountText(storedAmount);
         if (!statuses.contains(status)) {
           status = 'programado';
         }
@@ -67,6 +75,9 @@ class _EventFormScreenState extends State<EventFormScreen> {
         selectedPackageId = availableServices.isEmpty
             ? null
             : availableServices.first.id;
+        agreedAmountController.text = availableServices.isEmpty
+            ? ''
+            : _amountText(availableServices.first.price);
       }
     }
 
@@ -134,11 +145,48 @@ class _EventFormScreenState extends State<EventFormScreen> {
                           onChanged: (value) {
                             setState(() {
                               selectedPackageId = value;
+                              final matches = availableServices
+                                  .where((item) => item.id == value)
+                                  .toList();
+                              if (matches.isNotEmpty) {
+                                agreedAmountController.text = _amountText(
+                                  matches.first.price,
+                                );
+                              }
                             });
                           },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Selecciona un servicio';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: agreedAmountController,
+                          decoration: const InputDecoration(
+                            labelText: 'Monto acordado (RD\$)',
+                            helperText:
+                                'Se guarda con el evento. Cambiar el precio '
+                                'del servicio no afecta eventos ya '
+                                'registrados.',
+                            helperMaxLines: 3,
+                            prefixIcon: Icon(Icons.attach_money_outlined),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textInputAction: TextInputAction.next,
+                          validator: (value) {
+                            final amount = double.tryParse(
+                              (value ?? '').trim().replaceAll(',', '.'),
+                            );
+                            if (amount == null) {
+                              return 'Escribe un monto valido';
+                            }
+                            if (amount <= 0) {
+                              return 'El monto debe ser mayor que cero';
                             }
                             return null;
                           },
@@ -240,6 +288,13 @@ class _EventFormScreenState extends State<EventFormScreen> {
                                   setState(() {
                                     isSaving = true;
                                   });
+                                  final agreedAmount =
+                                      double.tryParse(
+                                        agreedAmountController.text
+                                            .trim()
+                                            .replaceAll(',', '.'),
+                                      ) ??
+                                      0;
                                   final savedRemotely = isEditing
                                       ? await viewModel.updateEvent(
                                           event: event!,
@@ -249,6 +304,7 @@ class _EventFormScreenState extends State<EventFormScreen> {
                                           dateTime: selectedDateTime,
                                           location: locationController.text,
                                           status: status,
+                                          agreedAmount: agreedAmount,
                                         )
                                       : await viewModel.addEvent(
                                           clientId: selectedClientId!,
@@ -257,6 +313,7 @@ class _EventFormScreenState extends State<EventFormScreen> {
                                           dateTime: selectedDateTime,
                                           location: locationController.text,
                                           status: status,
+                                          agreedAmount: agreedAmount,
                                         );
                                   if (!mounted) return;
                                   setState(() {
@@ -287,6 +344,14 @@ class _EventFormScreenState extends State<EventFormScreen> {
               ),
       ),
     );
+  }
+
+  /// Convierte un monto a texto editable, sin decimales cuando no hacen falta.
+  String _amountText(double amount) {
+    if (amount == amount.roundToDouble()) {
+      return amount.toStringAsFixed(0);
+    }
+    return amount.toStringAsFixed(2);
   }
 
   List<PhotoPackage> _availableServices(List<PhotoPackage> services) {

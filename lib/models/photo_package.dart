@@ -5,6 +5,7 @@ class PhotoPackage {
     required this.description,
     required this.price,
     required this.active,
+    this.userId = '',
   });
 
   final String id;
@@ -13,12 +14,16 @@ class PhotoPackage {
   final double price;
   final bool active;
 
+  /// Identificador del usuario autenticado dueño del registro.
+  final String userId;
+
   PhotoPackage copyWith({
     String? id,
     String? name,
     String? description,
     double? price,
     bool? active,
+    String? userId,
   }) {
     return PhotoPackage(
       id: id ?? this.id,
@@ -26,6 +31,7 @@ class PhotoPackage {
       description: description ?? this.description,
       price: price ?? this.price,
       active: active ?? this.active,
+      userId: userId ?? this.userId,
     );
   }
 }
