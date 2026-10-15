@@ -52,4 +52,4 @@ app.*.map.json
 /tmp/
 
 # Copias locales de borradores; los documentos académicos se conservan en docs/
-/Claude outputs/
+/borradores_locales/
