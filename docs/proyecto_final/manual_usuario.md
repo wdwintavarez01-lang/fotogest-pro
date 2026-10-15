@@ -1,4 +1,6 @@
-# Manual de usuario - FotoGest Pro
+# Manual de usuario de FotoGest Pro 1.1.0
+
+Consulta [Guardado y sincronización](cierre_1_1_0.md) para distinguir confirmados, pendientes y rechazados. Las cuentas con abonos no se eliminan; se conserva su historial.
 
 ## Proposito de la aplicacion
 
@@ -23,8 +25,7 @@ servicios, ventas independientes y pagos desde una aplicacion movil.
 1. Abrir la aplicacion.
 2. Escribir correo y contrasena.
 3. Presionar **Entrar**.
-4. Si no hay internet, la app puede entrar offline con esas mismas credenciales
-   solo si ya se usaron antes correctamente en ese celular.
+4. La primera entrada requiere Internet. Si conservas la sesión abierta, al reabrir la app sin red puedes consultar la copia guardada y registrar cambios pendientes. Después de cerrar sesión debes autenticarte en línea.
 
 ## Dashboard
 
@@ -83,7 +84,7 @@ La pantalla **Pagos** se organiza en dos pestanas:
 Cuando el saldo pendiente de un evento o venta llega a cero, deja de aparecer en
 Pendientes y pasa automaticamente al Historial.
 
-Despues de registrar un abono, la app muestra un recibo de muestra con numero,
+Después de registrar un abono, la app muestra un comprobante confirmado o pendiente con número,
 cuenta, fecha, metodo de pago, monto abonado y saldo restante.
 
 ## Servicios
@@ -94,8 +95,7 @@ desactivar o eliminar un servicio si no esta siendo usado por eventos.
 
 ## Capturas incluidas
 
-El manual se acompana con capturas reales de las pantallas principales en la
-carpeta `screenshots`.
+La entrega académica conserva capturas del ensayo Android en su carpeta Evidencias. Son datos locales de prueba; no representan cobros reales.
 
 ## Problemas comunes
 

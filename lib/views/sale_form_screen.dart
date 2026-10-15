@@ -317,55 +317,75 @@ class _SaleFormScreenState extends State<SaleFormScreen> {
       }
     });
 
-    final result = isEditing
-        ? await viewModel.updateSale(
-            sale: sale!,
-            clientId: selectedClientId!,
-            type: type,
-            description: descriptionController.text,
-            quantity: _parseQuantity(quantityController.text)!,
-            unitPrice: _parseMoney(unitPriceController.text)!,
-            soldAt: soldAt,
-            status: status,
-            notes: notesController.text,
-          )
-        : await viewModel.addSale(
-            clientId: selectedClientId!,
-            type: type,
-            description: descriptionController.text,
-            quantity: _parseQuantity(quantityController.text)!,
-            unitPrice: _parseMoney(unitPriceController.text)!,
-            soldAt: soldAt,
-            status: status,
-            notes: notesController.text,
-          );
+    try {
+      final result = isEditing
+          ? await viewModel.updateSale(
+              sale: sale!,
+              clientId: selectedClientId!,
+              type: type,
+              description: descriptionController.text,
+              quantity: _parseQuantity(quantityController.text)!,
+              unitPrice: _parseMoney(unitPriceController.text)!,
+              soldAt: soldAt,
+              status: status,
+              notes: notesController.text,
+            )
+          : await viewModel.addSale(
+              clientId: selectedClientId!,
+              type: type,
+              description: descriptionController.text,
+              quantity: _parseQuantity(quantityController.text)!,
+              unitPrice: _parseMoney(unitPriceController.text)!,
+              soldAt: soldAt,
+              status: status,
+              notes: notesController.text,
+            );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      isSaving = false;
-      isSavingAndPaying = false;
-    });
+      setState(() {
+        isSaving = false;
+        isSavingAndPaying = false;
+      });
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          result.savedRemotely
-              ? 'Venta guardada Online'
-              : 'Venta guardada en modo local',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.savedRemotely
+                ? 'Venta guardada Online'
+                : 'Venta pendiente de sincronizar',
+          ),
         ),
-      ),
-    );
-
-    if (payNow) {
-      navigator.pushReplacementNamed(
-        PaymentFormScreen.routeName,
-        arguments: PaymentFormArguments(sale: result.sale),
       );
-      return;
-    }
 
-    navigator.pop();
+      if (payNow) {
+        navigator.pushReplacementNamed(
+          PaymentFormScreen.routeName,
+          arguments: PaymentFormArguments(sale: result.sale),
+        );
+        return;
+      }
+
+      navigator.pop();
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'No se pudo guardar. Revisa la sincronizacion.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+          isSavingAndPaying = false;
+        });
+      }
+    }
   }
 
   Future<void> _pickDate() async {

@@ -111,3 +111,20 @@ node tools/verify_firestore_connection.js
 - Los entregables académicos van en Word (.docx) con estilo profesional azul
   marino, no como páginas web.
 - Antes de hacer cambios grandes, conviene preguntarle qué priorizar.
+
+
+## Actualización verificada del 15 de octubre de 2026
+
+La entrega actual es **1.1.0+3**. Esta sección actualiza los estados históricos anteriores: las reglas ya están publicadas y `test/widget_test.dart` contiene una prueba real, no una plantilla. Ver `docs/proyecto_final/cierre_1_1_0.md`.
+
+- Firebase Auth conserva la sesión; se retiró el acceso por hash de contraseña en preferencias.
+- `PendingJournal` conserva una instantánea confirmada y una cola por UID en preferencias. La interfaz distingue confirmado, pendiente y rechazado.
+- Los pagos se confirman en una transacción con el acumulado de su cuenta y centavos enteros; son inmutables. Las eliminaciones son lógicas y no se borran cuentas con abonos.
+- Cada edición lleva revisión esperada. Se ensayaron conflictos y dos cobros concurrentes sobre el mismo saldo.
+- Se declararon los permisos de Internet en el manifiesto principal de Android.
+- FlutterFire resuelto: core 4.15.0, auth 6.7.0, Firestore 6.10.0, interfaz 8.0.7. Esta última corrige el Future completado dos veces al fallar una transacción.
+- Aprobaron 21 pruebas locales, 30 de reglas e integración Android con modo avión. El ensayo de reinicio conserva la instalación con `--no-uninstall` y recupera sesión y pendiente entre procesos.
+- Respaldo privado: 39 documentos, restaurados y comparados en un emulador aislado. Migración remota: diez documentos activos con precondiciones y verificación; 26 registros heredados se conservaron sin reasignarlos ni borrarlos.
+- El código 1.1.0, la ficha con capturas y el informe final se conservan en Git. La entrega incluye un ZIP con huellas; su commit de referencia se registra en las evidencias de sincronización.
+
+Para compilar en este equipo, `tools/build_apk_windows.ps1` aplica temporalmente la alternativa TCP de Java. El video y el ensayo final en el teléfono del autor continúan a su cargo. No borrar datos de la app mientras queden cambios pendientes.

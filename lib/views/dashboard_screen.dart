@@ -6,6 +6,7 @@ import '../widgets/app_scope.dart';
 import '../widgets/fotogest_bottom_nav.dart';
 import '../widgets/metric_tile.dart';
 import '../widgets/status_chip.dart';
+import '../widgets/sync_panel.dart';
 import 'clients_screen.dart';
 import 'events_screen.dart';
 import 'login_screen.dart';
@@ -76,6 +77,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
               ],
             ),
+            const SyncPanel(),
             const SizedBox(height: 14),
             GridView.count(
               crossAxisCount: 2,
@@ -237,7 +239,7 @@ class DashboardScreen extends StatelessWidget {
           account.isEmpty
               ? 'Se cerrara la sesion actual y volveras a la pantalla de acceso.'
               : 'Se cerrara la sesion de $account y volveras a la pantalla de '
-                    'acceso.',
+                    'acceso. Pendientes conservados en este equipo: ${viewModel.pendingCount}.',
         ),
         actions: [
           TextButton(

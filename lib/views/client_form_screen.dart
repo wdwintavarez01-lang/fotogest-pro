@@ -130,32 +130,51 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                             setState(() {
                               isSaving = true;
                             });
-                            final savedRemotely = isEditing
-                                ? await viewModel.updateClient(
-                                    client: client!,
-                                    name: nameController.text,
-                                    phone: phoneController.text,
-                                    notes: notesController.text,
-                                  )
-                                : await viewModel.addClient(
-                                    name: nameController.text,
-                                    phone: phoneController.text,
-                                    notes: notesController.text,
-                                  );
-                            if (!mounted) return;
-                            setState(() {
-                              isSaving = false;
-                            });
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  savedRemotely
-                                      ? 'Cliente guardado Online'
-                                      : 'Cliente guardado en modo local',
+                            try {
+                              final savedRemotely = isEditing
+                                  ? await viewModel.updateClient(
+                                      client: client!,
+                                      name: nameController.text,
+                                      phone: phoneController.text,
+                                      notes: notesController.text,
+                                    )
+                                  : await viewModel.addClient(
+                                      name: nameController.text,
+                                      phone: phoneController.text,
+                                      notes: notesController.text,
+                                    );
+                              if (!mounted) return;
+                              setState(() {
+                                isSaving = false;
+                              });
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    savedRemotely
+                                        ? 'Cliente guardado Online'
+                                        : 'Cliente pendiente de sincronizar',
+                                  ),
                                 ),
-                              ),
-                            );
-                            navigator.pop();
+                              );
+                              navigator.pop();
+                            } catch (error) {
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    error is StateError
+                                        ? error.message.toString()
+                                        : 'No se pudo guardar. Revisa la sincronizacion.',
+                                  ),
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isSaving = false;
+                                });
+                              }
+                            }
                           },
                   ),
                   const SizedBox(height: 10),

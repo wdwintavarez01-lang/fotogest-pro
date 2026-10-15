@@ -144,34 +144,53 @@ class _PackageFormScreenState extends State<PackageFormScreen> {
                             setState(() {
                               isSaving = true;
                             });
-                            final savedRemotely = isEditing
-                                ? await viewModel.updatePackage(
-                                    package: service!,
-                                    name: nameController.text,
-                                    description: descriptionController.text,
-                                    price: _parsePrice(priceController.text)!,
-                                    active: active,
-                                  )
-                                : await viewModel.addPackage(
-                                    name: nameController.text,
-                                    description: descriptionController.text,
-                                    price: _parsePrice(priceController.text)!,
-                                    active: active,
-                                  );
-                            if (!mounted) return;
-                            setState(() {
-                              isSaving = false;
-                            });
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  savedRemotely
-                                      ? 'Servicio guardado Online'
-                                      : 'Servicio guardado en modo local',
+                            try {
+                              final savedRemotely = isEditing
+                                  ? await viewModel.updatePackage(
+                                      package: service!,
+                                      name: nameController.text,
+                                      description: descriptionController.text,
+                                      price: _parsePrice(priceController.text)!,
+                                      active: active,
+                                    )
+                                  : await viewModel.addPackage(
+                                      name: nameController.text,
+                                      description: descriptionController.text,
+                                      price: _parsePrice(priceController.text)!,
+                                      active: active,
+                                    );
+                              if (!mounted) return;
+                              setState(() {
+                                isSaving = false;
+                              });
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    savedRemotely
+                                        ? 'Servicio guardado Online'
+                                        : 'Servicio pendiente de sincronizar',
+                                  ),
                                 ),
-                              ),
-                            );
-                            navigator.pop();
+                              );
+                              navigator.pop();
+                            } catch (error) {
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    error is StateError
+                                        ? error.message.toString()
+                                        : 'No se pudo guardar. Revisa la sincronizacion.',
+                                  ),
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isSaving = false;
+                                });
+                              }
+                            }
                           },
                   ),
                   const SizedBox(height: 10),

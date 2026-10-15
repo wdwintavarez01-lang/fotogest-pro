@@ -230,36 +230,55 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                                   final amount = _parseAmount(
                                     amountController.text,
                                   )!;
-                                  final savedRemotely = await viewModel
-                                      .addPayment(
-                                        eventId: selectedTarget!.eventId,
-                                        saleId: selectedTarget.saleId,
-                                        amount: amount,
-                                        method: method,
-                                        paidAt: paidAt,
-                                        note: noteController.text,
-                                      );
-                                  if (!context.mounted) return;
-                                  setState(() {
-                                    isSaving = false;
-                                  });
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        savedRemotely
-                                            ? 'Abono guardado Online'
-                                            : 'Abono guardado en modo local',
+                                  try {
+                                    final savedRemotely = await viewModel
+                                        .addPayment(
+                                          eventId: selectedTarget!.eventId,
+                                          saleId: selectedTarget.saleId,
+                                          amount: amount,
+                                          method: method,
+                                          paidAt: paidAt,
+                                          note: noteController.text,
+                                        );
+                                    if (!context.mounted) return;
+                                    setState(() {
+                                      isSaving = false;
+                                    });
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          savedRemotely
+                                              ? 'Abono guardado Online'
+                                              : 'Abono pendiente de sincronizar',
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                  await _showReceipt(
-                                    context: context,
-                                    target: selectedTarget,
-                                    amount: amount,
-                                    savedRemotely: savedRemotely,
-                                  );
-                                  if (!mounted) return;
-                                  navigator.pop();
+                                    );
+                                    await _showReceipt(
+                                      context: context,
+                                      target: selectedTarget,
+                                      amount: amount,
+                                      savedRemotely: savedRemotely,
+                                    );
+                                    if (!mounted) return;
+                                    navigator.pop();
+                                  } catch (error) {
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          error is StateError
+                                              ? error.message.toString()
+                                              : 'No se pudo guardar. Revisa la sincronizacion.',
+                                        ),
+                                      ),
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        isSaving = false;
+                                      });
+                                    }
+                                  }
                                 },
                         ),
                         const SizedBox(height: 10),
@@ -320,7 +339,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Recibo de muestra'),
+          title: Text(savedRemotely ? 'Recibo de abono' : 'Abono pendiente'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +354,11 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
               Text('Abono: ${Formatters.money(amount)}'),
               Text('Saldo restante: ${Formatters.money(remaining.toDouble())}'),
               const SizedBox(height: 8),
-              Text(savedRemotely ? 'Estado: Online' : 'Estado: Local'),
+              Text(
+                savedRemotely
+                    ? 'Estado: Confirmado por Firebase'
+                    : 'Estado: Pendiente de confirmacion',
+              ),
             ],
           ),
           actions: [

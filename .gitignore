@@ -46,3 +46,10 @@ app.*.map.json
 
 # Local machine paths
 /android/local.properties
+
+# Herramientas de validación locales
+/tools/firestore-tests/node_modules/
+/tmp/
+
+# Copias locales de borradores; los documentos académicos se conservan en docs/
+/Claude outputs/

@@ -137,17 +137,30 @@ class PackagesScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final deletedRemotely = await viewModel.deletePackage(service.id);
-    if (!context.mounted) return;
+    try {
+      final deletedRemotely = await viewModel.deletePackage(service.id);
+      if (!context.mounted) return;
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deletedRemotely
-              ? 'Servicio eliminado Online'
-              : 'Servicio eliminado en modo local',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            deletedRemotely
+                ? 'Servicio eliminado Online'
+                : 'Servicio pendiente de sincronizar',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'No se pudo eliminar. Revisa la sincronizacion.',
+          ),
+        ),
+      );
+    }
   }
 }

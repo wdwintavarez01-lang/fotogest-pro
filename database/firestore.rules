@@ -1,116 +1,134 @@
 rules_version = '2';
-
-// Reglas de seguridad de FotoGest Pro.
-//
-// Principio aplicado: cada usuario autenticado accede unicamente a los
-// documentos cuyo campo `usuarioId` coincide con su propio identificador de
-// Firebase Authentication. Un usuario no puede leer, modificar ni eliminar la
-// informacion de otro negocio, y tampoco puede crear un documento a nombre de
-// otro usuario.
-
 service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // ----------------------------------------------------------------
-    // Funciones auxiliares
-    // ----------------------------------------------------------------
-
-    function autenticado() {
-      return request.auth != null;
-    }
-
-    // El documento que ya existe pertenece al usuario que hace la peticion.
-    function esPropietario() {
-      return autenticado() && resource.data.usuarioId == request.auth.uid;
-    }
-
-    // El documento que se quiere escribir queda a nombre del propio usuario.
-    function seGuardaComoPropio() {
-      return autenticado()
-        && request.resource.data.usuarioId == request.auth.uid;
-    }
-
-    function montoValido(campo) {
-      return request.resource.data[campo] is number
-        && request.resource.data[campo] >= 0;
-    }
-
-    // ----------------------------------------------------------------
-    // usuarios
-    // Cada persona solo puede leer y escribir su propio perfil. El
-    // identificador del documento debe ser su UID de Authentication.
-    // ----------------------------------------------------------------
-
-    match /usuarios/{usuarioId} {
-      allow read, write: if autenticado() && request.auth.uid == usuarioId;
-    }
-
-    // ----------------------------------------------------------------
-    // clientes
-    // ----------------------------------------------------------------
-
-    match /clientes/{clienteId} {
-      allow read, delete: if esPropietario();
-      allow create: if seGuardaComoPropio()
-        && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() >= 3;
-      allow update: if esPropietario() && seGuardaComoPropio();
-    }
-
-    // ----------------------------------------------------------------
-    // paquetes (servicios fotograficos)
-    // ----------------------------------------------------------------
-
-    match /paquetes/{paqueteId} {
-      allow read, delete: if esPropietario();
-      allow create: if seGuardaComoPropio() && montoValido('precio');
-      allow update: if esPropietario()
-        && seGuardaComoPropio()
-        && montoValido('precio');
-    }
-
-    // ----------------------------------------------------------------
-    // eventos
-    // ----------------------------------------------------------------
-
-    match /eventos/{eventoId} {
-      allow read, delete: if esPropietario();
-      allow create: if seGuardaComoPropio() && montoValido('montoAcordado');
-      allow update: if esPropietario()
-        && seGuardaComoPropio()
-        && montoValido('montoAcordado');
-    }
-
-    // ----------------------------------------------------------------
-    // ventas independientes
-    // ----------------------------------------------------------------
-
-    match /ventas/{ventaId} {
-      allow read, delete: if esPropietario();
-      allow create: if seGuardaComoPropio() && montoValido('total');
-      allow update: if esPropietario()
-        && seGuardaComoPropio()
-        && montoValido('total');
-    }
-
-    // ----------------------------------------------------------------
-    // pagos (abonos)
-    // ----------------------------------------------------------------
-
-    match /pagos/{pagoId} {
-      allow read, delete: if esPropietario();
-      allow create: if seGuardaComoPropio() && montoValido('monto');
-      allow update: if esPropietario()
-        && seGuardaComoPropio()
-        && montoValido('monto');
-    }
-
-    // ----------------------------------------------------------------
-    // Cualquier otra ruta queda bloqueada de forma explicita.
-    // ----------------------------------------------------------------
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+ match /databases/{database}/documents {
+  function owned(d) { return request.auth != null && d.usuarioId == request.auth.uid; }
+  function live(d) { return d.get('eliminado', false) == false; }
+  function cents(v) { return v is int && v >= 0 && v <= 100000000000; }
+  function text(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+  function creation(id, field) {
+   let d = request.resource.data;
+   return owned(d) && d[field] == id && d.revision == 1 && live(d)
+    && d.createdAt is timestamp && d.updatedAt is timestamp && text(d.operacionId, 8, 120);
   }
+  function edition(id, field) {
+   let d = request.resource.data;
+   return owned(resource.data) && owned(d) && d[field] == id && d[field] == resource.data[field]
+    && d.createdAt == resource.data.createdAt && d.revision == resource.data.get('revision', 0) + 1
+    && (live(resource.data) || !live(d)) && d.updatedAt is timestamp && text(d.operacionId, 8, 120);
+  }
+  function reference(collection, id, unchanged) {
+   let related = get(/databases/$(database)/documents/$(collection)/$(id)).data;
+   return owned(related) && (live(related) || unchanged);
+  }
+  function account(d, field) {
+   return cents(d.totalCentavos) && cents(d.abonadoCentavos)
+    && d.abonadoCentavos <= d.totalCentavos && d[field] == d.totalCentavos / 100.0
+    && d.totalAbonado == d.abonadoCentavos / 100.0 && (live(d) || d.abonadoCentavos == 0);
+  }
+  function unchangedBalance() {
+   let d = request.resource.data;
+   return d.abonadoCentavos == resource.data.abonadoCentavos && d.totalAbonado == resource.data.totalAbonado
+    && d.get('ultimoPagoId', '') == resource.data.get('ultimoPagoId', '')
+    && (d.abonadoCentavos == 0 || (d.clienteId == resource.data.clienteId
+     && d.get('paqueteId', '') == resource.data.get('paqueteId', '')));
+  }
+  function paymentPath(d) {
+   return d.eventoId != '' ? /databases/$(database)/documents/eventos/$(d.eventoId)
+    : /databases/$(database)/documents/ventas/$(d.ventaId);
+  }
+  function ledger(id, event) {
+   let d = request.resource.data;
+   let path = /databases/$(database)/documents/pagos/$(d.ultimoPagoId);
+   let p = getAfter(path).data;
+   return owned(resource.data) && owned(d) && live(resource.data) && resource.data.estado != 'cancelado'
+    && !exists(path) && owned(p)
+    && (event ? p.eventoId == id && p.ventaId == '' : p.ventaId == id && p.eventoId == '')
+    && p.montoCentavos is int && p.montoCentavos > 0
+    && d.abonadoCentavos == resource.data.abonadoCentavos + p.montoCentavos
+    && d.revision == resource.data.get('revision', 0) + 1
+    && d.diff(resource.data).affectedKeys().hasOnly(['abonadoCentavos','totalAbonado','ultimoPagoId','revision'])
+    && account(d, event ? 'montoAcordado' : 'total');
+  }
+  match /usuarios/{id} {
+   allow read: if request.auth != null && request.auth.uid == id;
+   allow create, update: if request.auth != null && request.auth.uid == id
+    && request.resource.data.usuarioId == id && request.resource.data.rol == 'fotografo' && request.resource.data.activo == true;
+   allow delete: if false;
+  }
+  match /clientes/{id} {
+   allow get: if request.auth != null && (resource == null || owned(resource.data));
+   allow list: if owned(resource.data);
+   allow create: if creation(id, 'clienteId') && fields();
+   allow update: if edition(id, 'clienteId') && fields();
+   allow delete: if false;
+   function fields() {
+    let d = request.resource.data;
+    return text(d.nombre, 3, 200) && text(d.telefono, 0, 80) && text(d.notas, 0, 4000);
+   }
+  }
+  match /paquetes/{id} {
+   allow get: if request.auth != null && (resource == null || owned(resource.data));
+   allow list: if owned(resource.data);
+   allow create: if creation(id, 'paqueteId') && fields();
+   allow update: if edition(id, 'paqueteId') && fields();
+   allow delete: if false;
+   function fields() {
+    let d = request.resource.data;
+    return text(d.nombre, 3, 200) && text(d.descripcion, 0, 4000) && d.activo is bool
+     && d.precio is number && d.precio >= 0 && d.precio <= 1000000000;
+   }
+  }
+  match /eventos/{id} {
+   allow get: if request.auth != null && (resource == null || owned(resource.data));
+   allow list: if owned(resource.data);
+   allow create: if creation(id, 'eventoId') && fields(false) && request.resource.data.abonadoCentavos == 0;
+   allow update: if (edition(id, 'eventoId') && fields(true) && unchangedBalance()) || ledger(id, true);
+   allow delete: if false;
+   function fields(updating) {
+    let d = request.resource.data;
+    return account(d, 'montoAcordado')
+     && reference('clientes', d.clienteId, updating && d.clienteId == resource.data.clienteId)
+     && reference('paquetes', d.paqueteId, updating && d.paqueteId == resource.data.paqueteId)
+     && text(d.tipo, 1, 200) && text(d.ubicacion, 0, 500) && d.fechaHora is timestamp
+     && d.estado in ['programado','en_proceso','completado','cancelado'];
+   }
+  }
+  match /ventas/{id} {
+   allow get: if request.auth != null && (resource == null || owned(resource.data));
+   allow list: if owned(resource.data);
+   allow create: if creation(id, 'ventaId') && fields(false) && request.resource.data.abonadoCentavos == 0;
+   allow update: if (edition(id, 'ventaId') && fields(true) && unchangedBalance()) || ledger(id, false);
+   allow delete: if false;
+   function fields(updating) {
+    let d = request.resource.data;
+    return account(d, 'total') && reference('clientes', d.clienteId, updating && d.clienteId == resource.data.clienteId)
+     && d.cantidad is int && d.cantidad > 0 && d.cantidad <= 1000000
+     && cents(d.precioUnitarioCentavos) && d.precioUnitario == d.precioUnitarioCentavos / 100.0
+     && d.totalCentavos == d.cantidad * d.precioUnitarioCentavos
+     && d.fechaVenta is timestamp && text(d.descripcion, 0, 4000) && text(d.notas, 0, 4000)
+     && d.tipo in ['foto_individual','impresion','edicion','retoque','sesion_rapida','servicio','otro']
+     && d.estado in ['pendiente','cancelado'];
+   }
+  }
+  match /pagos/{id} {
+   allow get: if request.auth != null && (resource == null || owned(resource.data));
+   allow list: if owned(resource.data);
+   allow create: if creation(id, 'pagoId') && fields(id);
+   allow update, delete: if false;
+   function fields(id) {
+    let d = request.resource.data;
+    let path = paymentPath(d);
+    let before = get(path).data;
+    let after = getAfter(path).data;
+    return text(d.eventoId, 0, 200) && text(d.ventaId, 0, 200)
+     && ((d.eventoId != '' && d.ventaId == '') || (d.ventaId != '' && d.eventoId == ''))
+     && cents(d.montoCentavos) && d.montoCentavos > 0 && d.monto == d.montoCentavos / 100.0
+     && d.metodo in ['efectivo','transferencia','tarjeta','otro'] && d.fechaPago is timestamp && text(d.nota, 0, 4000)
+     && owned(before) && live(before) && before.estado != 'cancelado'
+     && after.ultimoPagoId == id && after.abonadoCentavos == before.abonadoCentavos + d.montoCentavos
+     && after.abonadoCentavos <= after.totalCentavos;
+   }
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
 }

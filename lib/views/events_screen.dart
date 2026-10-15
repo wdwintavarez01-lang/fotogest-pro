@@ -134,7 +134,7 @@ class EventsScreen extends StatelessWidget {
           content: Text(
             payments.isEmpty
                 ? 'Esta accion quitara el evento de la agenda.'
-                : 'Este evento tiene pagos registrados. Al eliminarlo tambien se eliminaran esos pagos.',
+                : 'Este evento tiene pagos registrados. Sus pagos se conservan. No se permite eliminar una cuenta con abonos.',
           ),
           actions: [
             TextButton(
@@ -153,17 +153,30 @@ class EventsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final deletedRemotely = await viewModel.deleteEvent(event.id);
-    if (!context.mounted) return;
+    try {
+      final deletedRemotely = await viewModel.deleteEvent(event.id);
+      if (!context.mounted) return;
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deletedRemotely
-              ? 'Evento eliminado Online'
-              : 'Evento eliminado en modo local',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            deletedRemotely
+                ? 'Evento eliminado Online'
+                : 'Evento pendiente de sincronizar',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'No se pudo eliminar. Revisa la sincronizacion.',
+          ),
+        ),
+      );
+    }
   }
 }

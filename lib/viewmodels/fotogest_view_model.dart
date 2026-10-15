@@ -37,13 +37,16 @@ class FotogestViewModel extends ChangeNotifier {
 
   String get connectionLabel {
     if (isLoading) return 'Cargando';
-    if (remoteDataLoaded && !offlineSession) return 'Online';
+    if (remoteDataLoaded && !offlineSession && pendingCount == 0) {
+      return 'Online';
+    }
     if (offlineSession) return 'Offline';
-    return 'Local';
+    if (pendingCount > 0) return 'Pendiente';
+    return 'Sin datos';
   }
 
   double get totalPaid {
-    return payments.fold(0, (total, payment) => total + payment.amount);
+    return _money(payments.fold(0, (total, payment) => total + payment.amount));
   }
 
   int get activeEvents {
@@ -62,11 +65,13 @@ class FotogestViewModel extends ChangeNotifier {
       if (sale.status == 'cancelado') continue;
       total += pendingForSale(sale.id);
     }
-    return total;
+    return _money(total);
   }
 
+  static double _money(double value) => (value * 100).round() / 100;
+
   Client clientFor(String id) {
-    return clients.firstWhere(
+    return _repository.getAllClients().firstWhere(
       (client) => client.id == id,
       orElse: () => Client(
         id: id,
@@ -95,7 +100,7 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   PhotoPackage packageFor(String id) {
-    return packages.firstWhere(
+    return _repository.getAllPackages().firstWhere(
       (package) => package.id == id,
       orElse: () => PhotoPackage(
         id: id,
@@ -128,12 +133,10 @@ class FotogestViewModel extends ChangeNotifier {
   /// Monto total que debe cobrarse por un evento.
   ///
   /// Se usa el monto acordado guardado dentro del evento. Los eventos creados
-  /// antes de que existiera ese campo se resuelven con el precio actual del
-  /// servicio, para no perder su saldo.
+  /// anteriores a esta version se normalizan con la migracion de la base.
   double amountForEvent(String eventId) {
     final event = eventFor(eventId);
-    if (event.agreedAmount > 0) return event.agreedAmount;
-    return packageFor(event.packageId).price;
+    return event.agreedAmount;
   }
 
   List<Payment> paymentsForEvent(String eventId) {
@@ -201,15 +204,19 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   double paidForEvent(String eventId) {
-    return paymentsForEvent(eventId).fold(0, (sum, payment) {
-      return sum + payment.amount;
-    });
+    return _money(
+      paymentsForEvent(eventId).fold(0.0, (sum, payment) {
+        return sum + payment.amount;
+      }),
+    );
   }
 
   double paidForSale(String saleId) {
-    return paymentsForSale(saleId).fold(0, (sum, payment) {
-      return sum + payment.amount;
-    });
+    return _money(
+      paymentsForSale(saleId).fold(0.0, (sum, payment) {
+        return sum + payment.amount;
+      }),
+    );
   }
 
   double pendingForEvent(String eventId) {
@@ -217,14 +224,14 @@ class FotogestViewModel extends ChangeNotifier {
     if (event.status == 'cancelado') return 0;
     final amount = amountForEvent(eventId);
     final paid = paidForEvent(eventId);
-    return (amount - paid).clamp(0, amount).toDouble();
+    return _money((amount - paid).clamp(0, amount).toDouble());
   }
 
   double pendingForSale(String saleId) {
     final sale = saleFor(saleId);
     if (sale.status == 'cancelado') return 0;
     final paid = paidForSale(saleId);
-    return (sale.total - paid).clamp(0, sale.total).toDouble();
+    return _money((sale.total - paid).clamp(0, sale.total).toDouble());
   }
 
   Payment? lastPaymentForEvent(String eventId) {
@@ -265,9 +272,14 @@ class FotogestViewModel extends ChangeNotifier {
 
     try {
       remoteDataLoaded = await _repository.loadRemoteData();
-      connectionMessage = remoteDataLoaded
-          ? 'Datos cargados en modo Online'
-          : 'No se pudo leer la base de datos.';
+      offlineSession = _repository.fromCache;
+      connectionMessage =
+          syncError ??
+          (offlineSession
+              ? 'Sin conexion. Consulta la cache y guarda cambios pendientes de sincronizar.'
+              : remoteDataLoaded
+              ? 'Datos actualizados. Pendientes: $pendingCount'
+              : 'No hay datos guardados. Conectate para la primera carga.');
       return remoteDataLoaded;
     } catch (_) {
       remoteDataLoaded = false;
@@ -290,10 +302,7 @@ class FotogestViewModel extends ChangeNotifier {
         return false;
       }
       await loadRemoteData();
-      offlineSession = _repository.lastSignInWasOffline;
-      connectionMessage = offlineSession
-          ? 'Sesion offline iniciada con credenciales guardadas'
-          : 'Sesion iniciada Online';
+      offlineSession = _repository.fromCache;
       notifyListeners();
       return true;
     } catch (_) {
@@ -315,6 +324,33 @@ class FotogestViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  int get pendingCount => _repository.pendingCount;
+  String? get syncError => _repository.syncError;
+  bool get hasSession => _repository.hasSession;
+  bool _mutating = false;
+  bool get busy => isLoading || _mutating;
+  Future<T> _mutate<T>(Future<T> Function() action) async {
+    _mutating = true;
+    try {
+      return await action();
+    } finally {
+      _mutating = false;
+      offlineSession = _repository.fromCache;
+      notifyListeners();
+    }
+  }
+
+  Future<void> synchronize() async {
+    if (busy) return;
+    await _mutate(() => _repository.synchronize(retry: true));
+    await loadRemoteData();
+  }
+
+  Future<void> discardPending() async {
+    await _mutate(_repository.discardPending);
+    await loadRemoteData();
+  }
+
   // ---------------------------------------------------------------------
   // Clientes
   // ---------------------------------------------------------------------
@@ -324,14 +360,15 @@ class FotogestViewModel extends ChangeNotifier {
     required String phone,
     String notes = '',
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final savedRemotely = await _repository.addClient(
-      Client(
-        id: 'cli_$timestamp',
-        userId: currentUserId,
-        name: name.trim(),
-        phone: phone.trim(),
-        notes: notes.trim(),
+    final savedRemotely = await _mutate(
+      () => _repository.addClient(
+        Client(
+          id: FotogestRepository.newId('cli'),
+          userId: currentUserId,
+          name: name.trim(),
+          phone: phone.trim(),
+          notes: notes.trim(),
+        ),
       ),
     );
     notifyListeners();
@@ -344,12 +381,14 @@ class FotogestViewModel extends ChangeNotifier {
     required String phone,
     String notes = '',
   }) async {
-    final savedRemotely = await _repository.updateClient(
-      client.copyWith(
-        userId: client.userId.isEmpty ? currentUserId : client.userId,
-        name: name.trim(),
-        phone: phone.trim(),
-        notes: notes.trim(),
+    final savedRemotely = await _mutate(
+      () => _repository.updateClient(
+        client.copyWith(
+          userId: client.userId.isEmpty ? currentUserId : client.userId,
+          name: name.trim(),
+          phone: phone.trim(),
+          notes: notes.trim(),
+        ),
       ),
     );
     notifyListeners();
@@ -357,7 +396,9 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Future<bool> deleteClient(String clientId) async {
-    final deletedRemotely = await _repository.deleteClient(clientId);
+    final deletedRemotely = await _mutate(
+      () => _repository.deleteClient(clientId),
+    );
     notifyListeners();
     return deletedRemotely;
   }
@@ -372,15 +413,16 @@ class FotogestViewModel extends ChangeNotifier {
     required double price,
     bool active = true,
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final savedRemotely = await _repository.addPackage(
-      PhotoPackage(
-        id: 'paq_$timestamp',
-        userId: currentUserId,
-        name: name.trim(),
-        description: description.trim(),
-        price: price,
-        active: active,
+    final savedRemotely = await _mutate(
+      () => _repository.addPackage(
+        PhotoPackage(
+          id: FotogestRepository.newId('paq'),
+          userId: currentUserId,
+          name: name.trim(),
+          description: description.trim(),
+          price: price,
+          active: active,
+        ),
       ),
     );
     notifyListeners();
@@ -394,13 +436,15 @@ class FotogestViewModel extends ChangeNotifier {
     required double price,
     required bool active,
   }) async {
-    final savedRemotely = await _repository.updatePackage(
-      package.copyWith(
-        userId: package.userId.isEmpty ? currentUserId : package.userId,
-        name: name.trim(),
-        description: description.trim(),
-        price: price,
-        active: active,
+    final savedRemotely = await _mutate(
+      () => _repository.updatePackage(
+        package.copyWith(
+          userId: package.userId.isEmpty ? currentUserId : package.userId,
+          name: name.trim(),
+          description: description.trim(),
+          price: price,
+          active: active,
+        ),
       ),
     );
     notifyListeners();
@@ -408,7 +452,9 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Future<bool> deletePackage(String packageId) async {
-    final deletedRemotely = await _repository.deletePackage(packageId);
+    final deletedRemotely = await _mutate(
+      () => _repository.deletePackage(packageId),
+    );
     notifyListeners();
     return deletedRemotely;
   }
@@ -426,18 +472,19 @@ class FotogestViewModel extends ChangeNotifier {
     required String status,
     required double agreedAmount,
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final savedRemotely = await _repository.addEvent(
-      PhotoEvent(
-        id: 'evt_$timestamp',
-        clientId: clientId,
-        packageId: packageId,
-        userId: currentUserId,
-        type: type.trim(),
-        dateTime: dateTime,
-        location: location.trim(),
-        status: status,
-        agreedAmount: agreedAmount,
+    final savedRemotely = await _mutate(
+      () => _repository.addEvent(
+        PhotoEvent(
+          id: FotogestRepository.newId('evt'),
+          clientId: clientId,
+          packageId: packageId,
+          userId: currentUserId,
+          type: type.trim(),
+          dateTime: dateTime,
+          location: location.trim(),
+          status: status,
+          agreedAmount: agreedAmount,
+        ),
       ),
     );
     notifyListeners();
@@ -454,16 +501,18 @@ class FotogestViewModel extends ChangeNotifier {
     required String status,
     required double agreedAmount,
   }) async {
-    final savedRemotely = await _repository.updateEvent(
-      event.copyWith(
-        userId: event.userId.isEmpty ? currentUserId : event.userId,
-        clientId: clientId,
-        packageId: packageId,
-        type: type.trim(),
-        dateTime: dateTime,
-        location: location.trim(),
-        status: status,
-        agreedAmount: agreedAmount,
+    final savedRemotely = await _mutate(
+      () => _repository.updateEvent(
+        event.copyWith(
+          userId: event.userId.isEmpty ? currentUserId : event.userId,
+          clientId: clientId,
+          packageId: packageId,
+          type: type.trim(),
+          dateTime: dateTime,
+          location: location.trim(),
+          status: status,
+          agreedAmount: agreedAmount,
+        ),
       ),
     );
     notifyListeners();
@@ -471,7 +520,9 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Future<bool> deleteEvent(String eventId) async {
-    final deletedRemotely = await _repository.deleteEvent(eventId);
+    final deletedRemotely = await _mutate(
+      () => _repository.deleteEvent(eventId),
+    );
     notifyListeners();
     return deletedRemotely;
   }
@@ -490,9 +541,8 @@ class FotogestViewModel extends ChangeNotifier {
     required String status,
     String notes = '',
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final sale = PhotoSale(
-      id: 'ven_$timestamp',
+      id: FotogestRepository.newId('ven'),
       clientId: clientId,
       userId: currentUserId,
       type: type,
@@ -503,7 +553,7 @@ class FotogestViewModel extends ChangeNotifier {
       status: status,
       notes: notes.trim(),
     );
-    final savedRemotely = await _repository.addSale(sale);
+    final savedRemotely = await _mutate(() => _repository.addSale(sale));
     notifyListeners();
     return SaleSaveResult(sale: sale, savedRemotely: savedRemotely);
   }
@@ -530,13 +580,15 @@ class FotogestViewModel extends ChangeNotifier {
       status: status,
       notes: notes.trim(),
     );
-    final savedRemotely = await _repository.updateSale(updatedSale);
+    final savedRemotely = await _mutate(
+      () => _repository.updateSale(updatedSale),
+    );
     notifyListeners();
     return SaleSaveResult(sale: updatedSale, savedRemotely: savedRemotely);
   }
 
   Future<bool> deleteSale(String saleId) async {
-    final deletedRemotely = await _repository.deleteSale(saleId);
+    final deletedRemotely = await _mutate(() => _repository.deleteSale(saleId));
     notifyListeners();
     return deletedRemotely;
   }
@@ -553,17 +605,18 @@ class FotogestViewModel extends ChangeNotifier {
     required DateTime paidAt,
     String note = '',
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final savedRemotely = await _repository.addPayment(
-      Payment(
-        id: 'pag_$timestamp',
-        eventId: eventId,
-        saleId: saleId,
-        userId: currentUserId,
-        amount: amount,
-        method: method,
-        paidAt: paidAt,
-        note: note.trim(),
+    final savedRemotely = await _mutate(
+      () => _repository.addPayment(
+        Payment(
+          id: FotogestRepository.newId('pag'),
+          eventId: eventId,
+          saleId: saleId,
+          userId: currentUserId,
+          amount: amount,
+          method: method,
+          paidAt: paidAt,
+          note: note.trim(),
+        ),
       ),
     );
     notifyListeners();
@@ -579,15 +632,17 @@ class FotogestViewModel extends ChangeNotifier {
     required DateTime paidAt,
     String note = '',
   }) async {
-    final savedRemotely = await _repository.updatePayment(
-      payment.copyWith(
-        userId: payment.userId.isEmpty ? currentUserId : payment.userId,
-        eventId: eventId,
-        saleId: saleId,
-        amount: amount,
-        method: method,
-        paidAt: paidAt,
-        note: note.trim(),
+    final savedRemotely = await _mutate(
+      () => _repository.updatePayment(
+        payment.copyWith(
+          userId: payment.userId.isEmpty ? currentUserId : payment.userId,
+          eventId: eventId,
+          saleId: saleId,
+          amount: amount,
+          method: method,
+          paidAt: paidAt,
+          note: note.trim(),
+        ),
       ),
     );
     notifyListeners();
@@ -595,7 +650,9 @@ class FotogestViewModel extends ChangeNotifier {
   }
 
   Future<bool> deletePayment(String paymentId) async {
-    final deletedRemotely = await _repository.deletePayment(paymentId);
+    final deletedRemotely = await _mutate(
+      () => _repository.deletePayment(paymentId),
+    );
     notifyListeners();
     return deletedRemotely;
   }

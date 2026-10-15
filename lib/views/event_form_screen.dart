@@ -295,40 +295,59 @@ class _EventFormScreenState extends State<EventFormScreen> {
                                             .replaceAll(',', '.'),
                                       ) ??
                                       0;
-                                  final savedRemotely = isEditing
-                                      ? await viewModel.updateEvent(
-                                          event: event!,
-                                          clientId: selectedClientId!,
-                                          packageId: selectedPackageId!,
-                                          type: typeController.text,
-                                          dateTime: selectedDateTime,
-                                          location: locationController.text,
-                                          status: status,
-                                          agreedAmount: agreedAmount,
-                                        )
-                                      : await viewModel.addEvent(
-                                          clientId: selectedClientId!,
-                                          packageId: selectedPackageId!,
-                                          type: typeController.text,
-                                          dateTime: selectedDateTime,
-                                          location: locationController.text,
-                                          status: status,
-                                          agreedAmount: agreedAmount,
-                                        );
-                                  if (!mounted) return;
-                                  setState(() {
-                                    isSaving = false;
-                                  });
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        savedRemotely
-                                            ? 'Evento guardado Online'
-                                            : 'Evento guardado en modo local',
+                                  try {
+                                    final savedRemotely = isEditing
+                                        ? await viewModel.updateEvent(
+                                            event: event!,
+                                            clientId: selectedClientId!,
+                                            packageId: selectedPackageId!,
+                                            type: typeController.text,
+                                            dateTime: selectedDateTime,
+                                            location: locationController.text,
+                                            status: status,
+                                            agreedAmount: agreedAmount,
+                                          )
+                                        : await viewModel.addEvent(
+                                            clientId: selectedClientId!,
+                                            packageId: selectedPackageId!,
+                                            type: typeController.text,
+                                            dateTime: selectedDateTime,
+                                            location: locationController.text,
+                                            status: status,
+                                            agreedAmount: agreedAmount,
+                                          );
+                                    if (!mounted) return;
+                                    setState(() {
+                                      isSaving = false;
+                                    });
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          savedRemotely
+                                              ? 'Evento guardado Online'
+                                              : 'Evento pendiente de sincronizar',
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                  navigator.pop();
+                                    );
+                                    navigator.pop();
+                                  } catch (error) {
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          error is StateError
+                                              ? error.message.toString()
+                                              : 'No se pudo guardar. Revisa la sincronizacion.',
+                                        ),
+                                      ),
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        isSaving = false;
+                                      });
+                                    }
+                                  }
                                 },
                         ),
                         const SizedBox(height: 10),

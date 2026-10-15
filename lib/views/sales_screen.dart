@@ -192,18 +192,31 @@ class SalesScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final deletedRemotely = await viewModel.deleteSale(sale.id);
-    if (!context.mounted) return;
+    try {
+      final deletedRemotely = await viewModel.deleteSale(sale.id);
+      if (!context.mounted) return;
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deletedRemotely
-              ? 'Venta eliminada Online'
-              : 'Venta eliminada en modo local',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            deletedRemotely
+                ? 'Venta eliminada Online'
+                : 'Venta pendiente de sincronizar',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'No se pudo eliminar. Revisa la sincronizacion.',
+          ),
+        ),
+      );
+    }
   }
 
   String _saleTypeLabel(String value) {

@@ -1,3 +1,9 @@
+# Plan y resultados de pruebas de FotoGest Pro 1.1.0
+
+La validación actual se reproduce con `flutter test`, la suite `tools/firestore-tests/rules.test.mjs` y la integración Android `integration_test/app_flow_test.dart`. Los registros de ejecución de la entrega identifican el resultado real de cada suite.
+
+La tabla conservada a continuación corresponde a la documentación anterior. Sus marcas de aprobación son antecedentes documentales; no sustituyen la ejecución actual. La política de acceso offline por credenciales se retiró: ahora se utiliza la sesión persistente de Firebase y una cola por UID.
+
 # Plan y resultados de pruebas - FotoGest Pro
 
 | # | Caso de prueba | Pasos | Resultado esperado | Estado |

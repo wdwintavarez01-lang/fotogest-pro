@@ -14,6 +14,7 @@ class FirebaseService {
         );
       }
       _enableOfflinePersistence();
+
       return true;
     } on UnsupportedError {
       return false;

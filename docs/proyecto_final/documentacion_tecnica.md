@@ -1,101 +1,32 @@
-# Documentacion tecnica - FotoGest Pro
+# Documentación técnica de FotoGest Pro 1.1.0
 
-## Descripcion del problema
-
-Fotografos independientes suelen manejar clientes, eventos, ventas de fotos,
-servicios sueltos y pagos en notas, hojas de calculo o mensajes sueltos. Esto
-dificulta consultar saldos, recordar fechas y mantener un historial ordenado del
-servicio. FotoGest Pro organiza esa informacion en una aplicacion movil sencilla.
-
-## Objetivo general
-
-Desarrollar una aplicacion movil funcional que permita gestionar clientes de un
-negocio fotografico, registrar eventos, vender fotos o servicios independientes
-y consultar cobros desde una interfaz adaptada a dispositivos moviles.
-
-## Alcance de esta version
-
-Incluye inicio de sesion, dashboard, CRUD de clientes, servicios, eventos,
-ventas independientes, registro de abonos e historial de cuentas pagadas. No
-incluye subida de fotografias, facturacion fiscal, pagos en linea ni publicacion
-en tienda de aplicaciones.
-
-## Tecnologias utilizadas
-
-- Flutter: desarrollo movil multiplataforma.
-- Dart: lenguaje principal de la aplicacion.
-- Firebase Authentication: inicio de sesion.
-- Cloud Firestore: base de datos remota.
-- Material Design: componentes visuales moviles.
+FotoGest Pro gestiona clientes, servicios, eventos, ventas y abonos. La implementación actual y sus procedimientos reproducibles se describen en [Cierre 1.1.0](cierre_1_1_0.md).
 
 ## Arquitectura
 
-La app usa un patron MVVM sencillo:
+- `lib/models`: seis entidades con `copyWith`.
+- `lib/views` y `lib/widgets`: doce rutas, formularios, listas, comprobantes y estado de sincronización.
+- `lib/viewmodels`: saldos, pendientes, historial y coordinación mediante `ChangeNotifier`.
+- `lib/repositories`: único acceso a Firebase, validaciones, transacciones y `PendingJournal`.
+- `lib/services`: inicialización de Firebase y caché del SDK.
+- `lib/utils`: tema y formato de moneda y fechas.
 
-- `models`: entidades principales del dominio.
-- `repositories`: comunicacion con Firestore y datos locales de respaldo.
-- `services`: inicializacion de Firebase.
-- `viewmodels`: estado de la app y operaciones disponibles para las vistas.
-- `views`: pantallas principales.
-- `widgets`: componentes reutilizables.
+`AppScope` utiliza `InheritedNotifier`; no se usa Provider ni Riverpod. Las consultas comerciales filtran `usuarioId` por el UID de Firebase Auth.
 
-## Modelo de datos
+## Modelo documental
 
-Colecciones principales en Firestore:
+Colecciones: usuarios, clientes, paquetes, eventos, ventas y pagos. Cliente a operaciones, servicio a eventos y cuenta a abonos tienen relaciones 1:N. Un abono pertenece a un evento o una venta, nunca a ambos. El informe Word incluye el diccionario actualizado.
 
-- `usuarios`: usuarios del sistema.
-- `clientes`: clientes del fotografo.
-- `eventos`: sesiones o eventos fotograficos.
-- `paquetes`: paquetes de servicio.
-- `ventas`: fotos individuales, impresiones, ediciones, retoques o servicios
-  vendidos sin evento.
-- `pagos`: abonos asociados a eventos o ventas.
+Las cuentas usan `totalCentavos`, `abonadoCentavos` y `totalAbonado`; ventas añade `precioUnitarioCentavos` y pagos `montoCentavos`. `revision` impide sobrescribir ediciones desactualizadas. `operacionId` identifica reenvíos y `eliminado` conserva las referencias históricas.
 
-## Funcionalidad CRUD implementada
+## Persistencia y autenticación
 
-La funcionalidad central completa se implemento sobre clientes, servicios,
-eventos y ventas:
+La app guarda una instantánea confirmada y una cola por UID. El cambio solo se anuncia confirmado después de una respuesta de Firebase. Sin red queda pendiente; ante un rechazo se suspende la cola y la vista vuelve a los confirmados. La documentación no atribuye sincronización automática a una app cerrada: el reintento ocurre al reabrir y mientras se mantiene activa.
 
-- Crear cliente desde el formulario.
-- Leer clientes desde la lista.
-- Ver detalle del cliente en una hoja inferior.
-- Editar cliente existente.
-- Eliminar cliente con confirmacion.
-- Crear, editar y eliminar servicios fotograficos.
-- Crear, editar y eliminar eventos asociados a cliente y servicio.
-- Crear, editar y eliminar ventas independientes sin evento.
-- Calcular total de venta automaticamente desde cantidad y precio unitario.
-- Guardar una venta y abrir el cobro inmediato.
-- Registrar abonos para eventos o ventas pendientes.
-- Mostrar recibo de muestra al registrar un abono.
-- Consultar historial de cuentas pagadas.
+Firebase administra la sesión persistente; se retiró el acceso por hash de contraseña en preferencias. No hay cuentas de prueba precargadas en la interfaz ni contraseñas en el paquete académico.
 
-## Validaciones
+## Integridad y pruebas
 
-- El correo es obligatorio y debe tener formato basico valido.
-- La contrasena es obligatoria y debe tener al menos 6 caracteres.
-- El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.
-- El telefono es obligatorio y debe contener al menos 10 digitos.
-- Los precios y montos deben ser mayores que cero.
-- Los abonos no pueden superar el saldo pendiente.
-- Una venta debe tener cliente, cantidad y precio unitario. La descripcion es
-  opcional.
+Las reglas y transacciones verifican propietario, referencias, total de ventas, destino de pago y saldo. Los abonos confirmados son inmutables; una cuenta con abonos no se borra. Las bajas son lógicas. El monto pactado no depende del precio posterior del catálogo.
 
-## Decisiones de diseno
-
-Se eligio Firestore porque permite persistencia remota, integracion directa con
-Flutter y una estructura flexible por colecciones. Se mantuvieron datos locales
-de respaldo y acceso offline con credenciales guardadas para que la app pueda
-abrirse cuando no haya conexion.
-
-## Pruebas
-
-Las pruebas principales se documentan en `plan_pruebas.md`. Adicionalmente se
-ejecutaron:
-
-```bash
-flutter analyze
-flutter test
-```
-
-Ambos comandos pasan sin errores en la version actual.
+Aprobaron análisis, 21 pruebas locales, 30 de reglas, recorrido Android y dos etapas de recuperación entre procesos. Los respaldos de 39 documentos se restauraron y compararon en un proyecto de emulador aislado. La distribución académica conserva la firma debug; la distribución comercial requiere firma propia y validaciones adicionales de operación y dispositivos.

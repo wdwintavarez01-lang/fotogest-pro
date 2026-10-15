@@ -183,17 +183,30 @@ class ClientsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final deletedRemotely = await viewModel.deleteClient(client.id);
-    if (!context.mounted) return;
+    try {
+      final deletedRemotely = await viewModel.deleteClient(client.id);
+      if (!context.mounted) return;
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          deletedRemotely
-              ? 'Cliente eliminado Online'
-              : 'Cliente eliminado en modo local',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            deletedRemotely
+                ? 'Cliente eliminado Online'
+                : 'Cliente pendiente de sincronizar',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'No se pudo eliminar. Revisa la sincronizacion.',
+          ),
+        ),
+      );
+    }
   }
 }

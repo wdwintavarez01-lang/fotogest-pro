@@ -27,26 +27,52 @@ Future<void> main() async {
 }
 
 class FotoGestApp extends StatefulWidget {
-  const FotoGestApp({super.key, this.firebaseReady = false});
+  const FotoGestApp({super.key, this.firebaseReady = false, this.repository});
 
   final bool firebaseReady;
+  final FotogestRepository? repository;
 
   @override
   State<FotoGestApp> createState() => _FotoGestAppState();
 }
 
-class _FotoGestAppState extends State<FotoGestApp> {
+class _FotoGestAppState extends State<FotoGestApp> with WidgetsBindingObserver {
+  Timer? refreshTimer;
   late final FotogestViewModel viewModel;
 
   @override
   void initState() {
     super.initState();
     viewModel = FotogestViewModel(
-      widget.firebaseReady
-          ? FotogestRepository.firebase()
-          : FotogestRepository(),
+      widget.repository ??
+          (widget.firebaseReady
+              ? FotogestRepository.firebase()
+              : FotogestRepository()),
     );
+    WidgetsBinding.instance.addObserver(this);
     unawaited(viewModel.loadRemoteData());
+    refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (viewModel.hasSession && !viewModel.busy) {
+        unawaited(viewModel.loadRemoteData());
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        viewModel.hasSession &&
+        !viewModel.busy) {
+      unawaited(viewModel.loadRemoteData());
+    }
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    viewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,12 +91,48 @@ class _FotoGestAppState extends State<FotoGestApp> {
                   : constraints.maxWidth;
               return Align(
                 alignment: Alignment.topLeft,
-                child: SizedBox(width: width, child: child),
+                child: SizedBox(
+                  width: width,
+                  child: AnimatedBuilder(
+                    animation: viewModel,
+                    builder: (context, _) => Column(
+                      children: [
+                        if (viewModel.pendingCount > 0 ||
+                            viewModel.syncError != null ||
+                            viewModel.offlineSession)
+                          Material(
+                            color: viewModel.syncError != null
+                                ? Colors.red.shade100
+                                : Colors.amber.shade100,
+                            child: SafeArea(
+                              bottom: false,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                child: Text(
+                                  viewModel.syncError != null
+                                      ? 'Cambio rechazado. Revisa Sincronizacion en Inicio.'
+                                      : viewModel.pendingCount > 0
+                                      ? '${viewModel.pendingCount} cambios pendientes. Saldos por confirmar.'
+                                      : 'Sin conexion. Mostrando datos guardados.',
+                                ),
+                              ),
+                            ),
+                          ),
+                        Expanded(child: child ?? const SizedBox.shrink()),
+                      ],
+                    ),
+                  ),
+                ),
               );
             },
           );
         },
-        initialRoute: LoginScreen.routeName,
+        initialRoute: viewModel.hasSession
+            ? DashboardScreen.routeName
+            : LoginScreen.routeName,
         routes: {
           LoginScreen.routeName: (_) => const LoginScreen(),
           DashboardScreen.routeName: (_) => const DashboardScreen(),
